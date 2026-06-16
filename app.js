@@ -1,4 +1,4 @@
-// Flowmint waitlist — handles both signup forms with AJAX submission to Formspree.
+// Opero waitlist — handles both signup forms with AJAX submission to Formspree.
 //
 // ┌─────────────────────────────────────────────────────────────────────────┐
 // │  SET UP THE WAITLIST: paste your Formspree form ID below (one place).      │
