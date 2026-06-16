@@ -1,7 +1,7 @@
-# ⟳ Opero
+# ⟳ Volo
 
 > **Work that runs itself.**
-> Opero is an AI automation service that connects the tools you already use and runs the repetitive work for you — follow-ups, data entry, copy-paste between apps. You set the goal, it handles the grind.
+> Volo is an AI automation service that connects the tools you already use and runs the repetitive work for you — follow-ups, data entry, copy-paste between apps. You set the goal, it handles the grind.
 
 This repo contains the **landing page + waitlist** for the launch.
 
@@ -61,7 +61,7 @@ python3 -m http.server 8000
 
 ## Brand cheat-sheet
 
-- **Name:** Opero  *(Latin: "to work / get things done")*
+- **Name:** Volo  *(Latin: "I fly / I want" — say what you want, watch it take off)*
 - **Tagline:** *Work that runs itself.*
 - **Voice:** friendly, plain-spoken, a little playful — "for people with better things to do."
 - **Colors:** Violet `#6C5CE7` · Coral `#FF6B6B` · Sunny `#FFD166` · Mint `#4ECDC4` · Ink `#16162B`
@@ -73,7 +73,8 @@ Swap the glyph mark for a real logo when you have one (it's in the nav, footer, 
 
 ## Next steps to consider
 
-- [ ] Real logo + custom domain (`opero.ai` / `.com` / `.io` — or a variant if taken)
+- [ ] Real logo + custom domain (`volo.ai` / `getvolo.com` / `volohq.com` — bare `volo.com` is likely taken)
+- [ ] **Before public launch:** formal USPTO trademark search + registrar domain check (web search isn't enough)
 - [ ] Confirm the name is available (domain + trademark + social handles)
 - [ ] Add a privacy note / terms link before collecting emails at scale
 - [ ] Wire up an email tool (Buttondown, Loops, ConvertKit) for the welcome sequence
