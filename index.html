@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flowmint — Put your busywork on autopilot</title>
+  <meta name="description" content="Flowmint connects your tools and lets AI run the repetitive work for you. Join the waitlist for early access." />
+
+  <!-- Open Graph / social preview -->
+  <meta property="og:title" content="Flowmint — Put your busywork on autopilot" />
+  <meta property="og:description" content="AI automations that handle your repetitive work, end to end. Join the waitlist." />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌀</text></svg>" />
+</head>
+<body>
+  <!-- decorative background blobs -->
+  <div class="bg-blobs" aria-hidden="true">
+    <span class="blob blob--1"></span>
+    <span class="blob blob--2"></span>
+    <span class="blob blob--3"></span>
+  </div>
+
+  <header class="nav">
+    <a class="brand" href="#">
+      <span class="brand__mark">🌀</span>
+      <span class="brand__name">Flowmint</span>
+    </a>
+    <a class="nav__cta" href="#waitlist">Join the waitlist</a>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <span class="pill">⚡ Now onboarding early teams</span>
+      <h1>Put your busywork<br /><span class="grad-text">on autopilot.</span></h1>
+      <p class="hero__sub">
+        Flowmint connects the tools you already use and lets AI run the repetitive work for you —
+        the follow-ups, the data entry, the copy-paste between apps. You set the goal, we handle the grind.
+      </p>
+
+      <form id="waitlist-form" class="waitlist" action="https://formspree.io/f/YOUR_FORM_ID" method="POST" aria-label="Join the waitlist">
+        <input
+          type="email"
+          name="email"
+          id="email"
+          class="waitlist__input"
+          placeholder="you@company.com"
+          autocomplete="email"
+          required
+        />
+        <button type="submit" class="waitlist__btn">Get early access</button>
+      </form>
+      <p class="waitlist__note" id="form-status">No spam. Just an invite when your spot opens up.</p>
+
+      <div class="social-proof">
+        <div class="avatars" aria-hidden="true">
+          <span class="avatar">🦊</span>
+          <span class="avatar">🐙</span>
+          <span class="avatar">🦁</span>
+          <span class="avatar">🐳</span>
+        </div>
+        <span class="social-proof__text">Join <strong>500+</strong> founders &amp; operators already on the list</span>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features" id="how">
+      <h2 class="section-title">Automation that actually gets it done</h2>
+      <p class="section-sub">No flowchart spaghetti. Describe the outcome you want and Flowmint figures out the steps.</p>
+
+      <div class="cards">
+        <article class="card">
+          <div class="card__icon">🔌</div>
+          <h3>Connects everything</h3>
+          <p>Gmail, Slack, Notion, your CRM, spreadsheets — Flowmint plugs into the tools your team already lives in.</p>
+        </article>
+        <article class="card">
+          <div class="card__icon">🧠</div>
+          <h3>Thinks in plain English</h3>
+          <p>"Reply to new leads within 5 minutes and log them in the CRM." Type it like that. We build it like that.</p>
+        </article>
+        <article class="card">
+          <div class="card__icon">🔁</div>
+          <h3>Runs on its own</h3>
+          <p>Set it once and it works around the clock — handling the repetitive stuff so your team does the real work.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- STEPS -->
+    <section class="steps">
+      <h2 class="section-title">Up and running in minutes</h2>
+      <div class="steps__grid">
+        <div class="step">
+          <span class="step__num">1</span>
+          <h3>Connect your tools</h3>
+          <p>Securely link the apps you want Flowmint to work across.</p>
+        </div>
+        <div class="step">
+          <span class="step__num">2</span>
+          <h3>Describe the job</h3>
+          <p>Tell Flowmint what you want done, in your own words.</p>
+        </div>
+        <div class="step">
+          <span class="step__num">3</span>
+          <h3>Let it run</h3>
+          <p>Approve it once, then watch the busywork disappear.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="cta-band" id="waitlist">
+      <h2>Be first in line.</h2>
+      <p>Early members get founder pricing, priority onboarding, and a direct line to the team building Flowmint.</p>
+      <form id="waitlist-form-2" class="waitlist waitlist--dark" action="https://formspree.io/f/YOUR_FORM_ID" method="POST" aria-label="Join the waitlist">
+        <input
+          type="email"
+          name="email"
+          class="waitlist__input"
+          placeholder="you@company.com"
+          autocomplete="email"
+          required
+        />
+        <button type="submit" class="waitlist__btn">Join the waitlist</button>
+      </form>
+      <p class="waitlist__note" id="form-status-2">We'll only email you about early access.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span class="brand brand--sm">
+      <span class="brand__mark">🌀</span>
+      <span class="brand__name">Flowmint</span>
+    </span>
+    <span class="footer__copy">© <span id="year"></span> Flowmint. Built for people with better things to do.</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
