@@ -25,13 +25,14 @@ The waitlist posts to [**Formspree**](https://formspree.io) (free tier is fine t
 
 1. Create a free account at [formspree.io](https://formspree.io).
 2. Create a new form → copy its endpoint, e.g. `https://formspree.io/f/abcdwxyz`.
-3. In `index.html`, replace **both** occurrences of `YOUR_FORM_ID`:
-   ```html
-   <form ... action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+3. Open `app.js` and set the ID at the top — **one line, one place**:
+   ```js
+   var FORMSPREE_ID = "abcdwxyz"; // <- your real ID
    ```
-   with your real form ID (there are two forms — the hero and the bottom CTA — point both at the same endpoint).
+   Both forms (hero + bottom CTA) pick it up automatically.
 
-That's it — submissions will land in your Formspree dashboard and email you.
+That's it — submissions land in your Formspree dashboard and email you. Until the
+ID is set, the forms show a friendly "not connected yet" note instead of failing.
 
 > Prefer **Tally**, **Google Forms**, or **Buttondown** instead? Any service that accepts a `POST` with an `email` field works — just swap the `action` URL. Formspree is the default because it returns JSON for the inline success message.
 
@@ -53,7 +54,7 @@ python3 -m http.server 8000
 **Netlify / Vercel / Cloudflare Pages** — drag-and-drop the folder, or connect this repo. No build command needed; it's static.
 
 **GitHub Pages:**
-1. Push to GitHub (already on branch `claude/brave-archimedes-fjiea4`).
+1. Push to GitHub.
 2. Repo → Settings → Pages → deploy from branch → root `/`.
 
 ---
