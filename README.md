@@ -1,7 +1,7 @@
-# ⟳ Sello
+# ⟳ Hey Sello
 
 > **Work that runs itself.**
-> Sello is an AI automation service that connects the tools you already use and runs the repetitive work for you — follow-ups, data entry, copy-paste between apps. Just say the word ("Hey Sello…") and it handles the grind.
+> Hey Sello is an AI automation service that connects the tools you already use and runs the repetitive work for you — follow-ups, data entry, copy-paste between apps. Just say the word ("Hey Sello…") and it handles the grind.
 
 **Domain:** [heysello.in](https://heysello.in)
 
@@ -63,7 +63,7 @@ python3 -m http.server 8000
 
 ## Brand cheat-sheet
 
-- **Name:** Sello  *(friendly, conversational — "Hey Sello…" and it's handled)*
+- **Name:** Hey Sello  *(friendly, conversational — "Hey Sello…" and it's handled. Short form "Sello" in running copy.)*
 - **Domain:** heysello.in
 - **Tagline:** *Work that runs itself.*
 - **Voice:** friendly, plain-spoken, a little playful — "for people with better things to do."
