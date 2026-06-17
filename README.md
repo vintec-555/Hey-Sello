@@ -1,7 +1,9 @@
-# ⟳ Volo
+# ⟳ Sello
 
 > **Work that runs itself.**
-> Volo is an AI automation service that connects the tools you already use and runs the repetitive work for you — follow-ups, data entry, copy-paste between apps. You set the goal, it handles the grind.
+> Sello is an AI automation service that connects the tools you already use and runs the repetitive work for you — follow-ups, data entry, copy-paste between apps. Just say the word ("Hey Sello…") and it handles the grind.
+
+**Domain:** [heysello.in](https://heysello.in)
 
 This repo contains the **landing page + waitlist** for the launch.
 
@@ -61,7 +63,8 @@ python3 -m http.server 8000
 
 ## Brand cheat-sheet
 
-- **Name:** Volo  *(Latin: "I fly / I want" — say what you want, watch it take off)*
+- **Name:** Sello  *(friendly, conversational — "Hey Sello…" and it's handled)*
+- **Domain:** heysello.in
 - **Tagline:** *Work that runs itself.*
 - **Voice:** friendly, plain-spoken, a little playful — "for people with better things to do."
 - **Colors:** Violet `#6C5CE7` · Coral `#FF6B6B` · Sunny `#FFD166` · Mint `#4ECDC4` · Ink `#16162B`
@@ -73,9 +76,9 @@ Swap the glyph mark for a real logo when you have one (it's in the nav, footer, 
 
 ## Next steps to consider
 
-- [ ] Real logo + custom domain (`volo.ai` / `getvolo.com` / `volohq.com` — bare `volo.com` is likely taken)
-- [ ] **Before public launch:** formal USPTO trademark search + registrar domain check (web search isn't enough)
-- [ ] Confirm the name is available (domain + trademark + social handles)
+- [ ] Point `heysello.in` at the deployed site + add a real logo
+- [ ] **Before public launch:** formal trademark search (USPTO + India IP) — web search isn't enough
+- [ ] Grab matching social handles (@heysello / @sello)
 - [x] Basic privacy reassurance microcopy is on the page; add a full privacy policy / terms link before collecting emails at scale
 - [ ] Wire up an email tool (Buttondown, Loops, ConvertKit) for the welcome sequence
 - [ ] Analytics (Plausible / Fathom) to track signups
