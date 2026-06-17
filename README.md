@@ -11,7 +11,7 @@ This repo contains the **landing page + waitlist** for the launch.
 
 | File | Purpose |
 |------|---------|
-| `index.html` | The full landing page (hero, features, how-it-works, CTA). |
+| `index.html` | The full landing page (hero, features, how-it-works, FAQ, CTA). |
 | `styles.css` | Bold & friendly visual design — gradients, rounded cards, playful accents. |
 | `app.js` | Waitlist form handling (AJAX submit + success/error states). |
 
@@ -76,6 +76,6 @@ Swap the glyph mark for a real logo when you have one (it's in the nav, footer, 
 - [ ] Real logo + custom domain (`volo.ai` / `getvolo.com` / `volohq.com` — bare `volo.com` is likely taken)
 - [ ] **Before public launch:** formal USPTO trademark search + registrar domain check (web search isn't enough)
 - [ ] Confirm the name is available (domain + trademark + social handles)
-- [ ] Add a privacy note / terms link before collecting emails at scale
+- [x] Basic privacy reassurance microcopy is on the page; add a full privacy policy / terms link before collecting emails at scale
 - [ ] Wire up an email tool (Buttondown, Loops, ConvertKit) for the welcome sequence
 - [ ] Analytics (Plausible / Fathom) to track signups
