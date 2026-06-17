@@ -63,7 +63,7 @@ python3 -m http.server 8000
 
 ## Brand cheat-sheet
 
-- **Name:** Hey Sello  *(friendly, conversational — "Hey Sello…" and it's handled. Short form "Sello" in running copy.)*
+- **Name:** Hey Sello  *(friendly, conversational — "Hey Sello…" and it's handled)*
 - **Domain:** heysello.in
 - **Tagline:** *Work that runs itself.*
 - **Voice:** friendly, plain-spoken, a little playful — "for people with better things to do."
