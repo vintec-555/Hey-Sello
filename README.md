@@ -5,59 +5,69 @@
 
 **Domain:** [heysello.in](https://heysello.in)
 
-This repo contains the **landing page + waitlist** for the launch.
+This repo is the full Hey Sello product: a marketing site, a waitlist, and a working **AI agent** that runs tasks across your apps in plain English.
 
 ---
 
 ## What's here
 
-| File | Purpose |
-|------|---------|
-| `index.html` | The full landing page (hero, features, how-it-works, FAQ, CTA). |
-| `styles.css` | Bold & friendly visual design — gradients, rounded cards, playful accents. |
-| `app.js` | Waitlist form handling (AJAX submit + success/error states). |
+A **Next.js (App Router) + TypeScript** app, deployable to Vercel.
 
-It's a **static site** — no build step, no server to run.
-
----
-
-## 1. Hook up the waitlist (required)
-
-The waitlist posts to [**Formspree**](https://formspree.io) (free tier is fine to start).
-
-1. Create a free account at [formspree.io](https://formspree.io).
-2. Create a new form → copy its endpoint, e.g. `https://formspree.io/f/abcdwxyz`.
-3. Open `app.js` and set the ID at the top — **one line, one place**:
-   ```js
-   var FORMSPREE_ID = "abcdwxyz"; // <- your real ID
-   ```
-   Both forms (hero + bottom CTA) pick it up automatically.
-
-That's it — submissions land in your Formspree dashboard and email you. Until the
-ID is set, the forms show a friendly "not connected yet" note instead of failing.
-
-> Prefer **Tally**, **Google Forms**, or **Buttondown** instead? Any service that accepts a `POST` with an `email` field works — just swap the `action` URL. Formspree is the default because it returns JSON for the inline success message.
+| Path | What it is |
+|------|------------|
+| `app/page.tsx` | Marketing landing page (hero, features, how-it-works, FAQ, waitlist). |
+| `app/app/page.tsx` | **The product** — a chat console where you type a task and watch Sello run it step by step. |
+| `app/api/agent/route.ts` | The agent backend — a Claude tool-use loop that plans and executes across the tools. Streams each step (SSE). |
+| `app/api/waitlist/route.ts` | Waitlist signup API (file store + optional Formspree forward). |
+| `lib/tools.ts` | The agent's tool surface (Gmail / Slack / Notion / CRM). |
+| `app/globals.css` | The full visual design. |
+| `business/` | Business foundation docs — GTM, pricing, financial model, legal checklist. |
 
 ---
 
-## 2. Preview locally
-
-Open `index.html` directly in your browser, or serve it:
+## Run it locally
 
 ```bash
-python3 -m http.server 8000
-# then visit http://localhost:8000
+npm install
+npm run dev          # http://localhost:3000  (marketing)  ·  /app  (product)
 ```
+
+The product works out of the box in **Demo mode** — it runs against in-memory
+fixtures so you can explore the full flow with no keys.
+
+### Go live (real agent)
+
+Set an Anthropic API key and the same console runs the **real Claude agent**:
+
+```bash
+cp .env.example .env.local
+# then edit .env.local:
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Restart and `/app` flips to **Live agent** — Claude (`claude-opus-4-8`) plans
+and calls the tools itself. To make those tools touch *real* Gmail/Slack/etc.,
+replace each executor's body in `lib/tools.ts` with a real API call (the tool
+schema the model sees stays the same).
+
+### Waitlist
+
+Signups are stored to a JSON file by default. To also get email + a dashboard,
+create a form at [formspree.io](https://formspree.io) and set `FORMSPREE_ID` in
+`.env.local`. For production scale, swap the file store in
+`app/api/waitlist/route.ts` for Postgres or a KV store.
 
 ---
 
-## 3. Deploy (pick one)
+## Deploy
 
-**Netlify / Vercel / Cloudflare Pages** — drag-and-drop the folder, or connect this repo. No build command needed; it's static.
+**Vercel** (recommended): import the repo, add `ANTHROPIC_API_KEY` (and
+optionally `FORMSPREE_ID`) as environment variables, deploy. Then point
+**heysello.in** at it in the domain settings (free SSL is issued automatically).
 
-**GitHub Pages:**
-1. Push to GitHub.
-2. Repo → Settings → Pages → deploy from branch → root `/`.
+```bash
+npm run build && npm run start   # to verify a production build locally
+```
 
 ---
 
@@ -70,15 +80,15 @@ python3 -m http.server 8000
 - **Colors:** Violet `#6C5CE7` · Coral `#FF6B6B` · Sunny `#FFD166` · Mint `#4ECDC4` · Ink `#16162B`
 - **Mark:** ⟳
 
-Swap the glyph mark for a real logo when you have one (it's in the nav, footer, and favicon in `index.html`).
-
 ---
 
-## Next steps to consider
+## Roadmap to launch
 
-- [ ] Point `heysello.in` at the deployed site + add a real logo
-- [ ] **Before public launch:** formal trademark search (USPTO + India IP) — web search isn't enough
+- [ ] Add `ANTHROPIC_API_KEY` in your deploy env to switch the agent to live
+- [ ] Wire real OAuth integrations in `lib/tools.ts` (Gmail, Slack, Notion, CRM)
+- [ ] Replace the waitlist file store with a real DB; add a welcome email
+- [ ] Point `heysello.in` at the deployment + add a real logo
+- [ ] **Before public launch:** formal trademark search (USPTO + India IP)
 - [ ] Grab matching social handles (@heysello / @sello)
-- [x] Basic privacy reassurance microcopy is on the page; add a full privacy policy / terms link before collecting emails at scale
-- [ ] Wire up an email tool (Buttondown, Loops, ConvertKit) for the welcome sequence
-- [ ] Analytics (Plausible / Fathom) to track signups
+- [ ] Add analytics (Plausible / Fathom)
+- [ ] See `business/` for GTM, pricing, financial model, and the legal checklist

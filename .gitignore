@@ -1,1 +1,16 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# env
+.env
+.env*.local
+
+# misc
 preview-*.png
+*.log
+.DS_Store
