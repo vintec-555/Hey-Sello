@@ -1,28 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Step =
   | { kind: "status"; text: string }
   | { kind: "tool"; app: string; name: string; input: Record<string, unknown> }
-  | { kind: "result"; text: string }
+  | { kind: "result"; text: string; ok?: boolean }
   | { kind: "message"; text: string }
   | { kind: "error"; text: string };
 
-const APP_ICON: Record<string, string> = { gmail: "📧", slack: "💬", notion: "📝", crm: "📇", app: "⟳" };
+type Connections = {
+  agent: boolean;
+  gmail: { configured: boolean; connected: boolean };
+  whatsapp: { configured: boolean; connected: boolean };
+};
+
+const APP_ICON: Record<string, string> = { gmail: "📧", whatsapp: "💬", crm: "📇", app: "⟳" };
 const PRETTY: Record<string, string> = {
   gmail_search: "Searched Gmail",
-  gmail_send_reply: "Sent a reply",
+  gmail_send_reply: "Sent an email",
+  whatsapp_recent: "Read WhatsApp",
+  whatsapp_send: "Sent a WhatsApp message",
   crm_upsert_contact: "Updated the CRM",
-  slack_post_message: "Posted to Slack",
-  notion_add_row: "Added a Notion row",
 };
 
 const SUGGESTIONS = [
-  "Reply to new leads and log them in the CRM",
-  "Find demo requests in my inbox and notify #sales",
-  "Triage my unread email and summarize what needs a reply",
+  "Find demo requests in my inbox and reply, then log them in the CRM",
+  "Read my recent WhatsApp messages and summarize what needs a reply",
+  "Reply to unread leads from the last 2 days",
 ];
 
 export default function AppPage() {
@@ -30,31 +36,33 @@ export default function AppPage() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [running, setRunning] = useState(false);
   const [live, setLive] = useState<boolean | null>(null);
+  const [conn, setConn] = useState<Connections | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/connections").then((r) => r.json()).then(setConn).catch(() => {});
+  }, []);
 
   function push(s: Step) {
     setSteps((prev) => [...prev, s]);
     requestAnimationFrame(() => feedRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }));
   }
 
-  async function run(text: string) {
+  async function run(text: string, demo = false) {
     if (!text.trim() || running) return;
     setSteps([]);
     setLive(null);
     setRunning(true);
-
     try {
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task: text }),
+        body: JSON.stringify({ task: text, demo }),
       });
       if (!res.body) throw new Error("No response stream.");
-
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = "";
-
       for (;;) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -65,13 +73,13 @@ export default function AppPage() {
           const ev = /event: (.*)/.exec(chunk)?.[1];
           const data = /data: (.*)/.exec(chunk)?.[1];
           if (!ev || !data) continue;
-          const payload = JSON.parse(data);
-          if (ev === "mode") setLive(payload.live);
-          else if (ev === "status") push({ kind: "status", text: payload.text });
-          else if (ev === "tool") push({ kind: "tool", app: payload.app, name: payload.name, input: payload.input });
-          else if (ev === "result") push({ kind: "result", text: payload.summary });
-          else if (ev === "message") push({ kind: "message", text: payload.text });
-          else if (ev === "error") push({ kind: "error", text: payload.message });
+          const p = JSON.parse(data);
+          if (ev === "mode") setLive(p.live);
+          else if (ev === "status") push({ kind: "status", text: p.text });
+          else if (ev === "tool") push({ kind: "tool", app: p.app, name: p.name, input: p.input });
+          else if (ev === "result") push({ kind: "result", text: p.summary, ok: p.ok });
+          else if (ev === "message") push({ kind: "message", text: p.text });
+          else if (ev === "error") push({ kind: "error", text: p.message });
         }
       }
     } catch (err) {
@@ -89,13 +97,37 @@ export default function AppPage() {
         </Link>
         {live !== null && (
           <span className={`app-badge ${live ? "app-badge--live" : "app-badge--demo"}`}>
-            {live ? "Live agent" : "Demo mode"}
+            {live ? "Live · real actions" : "Simulated"}
           </span>
         )}
       </header>
 
+      {conn && (
+        <div className="conn-bar">
+          <ConnChip
+            label="Gmail"
+            icon="📧"
+            ok={conn.gmail.connected}
+            action={
+              conn.gmail.connected
+                ? undefined
+                : conn.gmail.configured
+                ? { href: "/api/connect/google", text: "Connect" }
+                : { hint: "Set GOOGLE_CLIENT_ID" }
+            }
+          />
+          <ConnChip
+            label="WhatsApp"
+            icon="💬"
+            ok={conn.whatsapp.connected}
+            action={conn.whatsapp.connected ? undefined : { hint: "Set WHATSAPP_TOKEN" }}
+          />
+          <ConnChip label="Agent" icon="🧠" ok={conn.agent} action={conn.agent ? undefined : { hint: "Set ANTHROPIC_API_KEY" }} />
+        </div>
+      )}
+
       <p className="app-hint">
-        Tell Sello what to do across your connected apps. It plans, then runs each step for you.
+        Tell Sello what to do across your connected apps. It plans, then runs each step — for real.
       </p>
 
       {steps.length === 0 && (
@@ -110,7 +142,7 @@ export default function AppPage() {
 
       <div className="feed">
         {steps.map((s, i) => {
-          if (s.kind === "tool") {
+          if (s.kind === "tool")
             return (
               <div className="step-row" key={i}>
                 <span className="step-ico">{APP_ICON[s.app] ?? "⟳"}</span>
@@ -120,31 +152,27 @@ export default function AppPage() {
                 </div>
               </div>
             );
-          }
-          if (s.kind === "result") {
+          if (s.kind === "result")
             return (
-              <div className="step-row step-row--result" key={i}>
-                <span className="step-ico">✓</span>
+              <div className={`step-row step-row--result${s.ok === false ? " step-row--error" : ""}`} key={i}>
+                <span className="step-ico">{s.ok === false ? "!" : "✓"}</span>
                 <div className="step-body targ">{s.text}</div>
               </div>
             );
-          }
-          if (s.kind === "message") {
+          if (s.kind === "message")
             return (
               <div className="step-row step-row--msg" key={i}>
                 <span className="step-ico">⟳</span>
                 <div className="step-body">{s.text}</div>
               </div>
             );
-          }
-          if (s.kind === "error") {
+          if (s.kind === "error")
             return (
               <div className="step-row step-row--error" key={i}>
                 <span className="step-ico">!</span>
                 <div className="step-body">{s.text}</div>
               </div>
             );
-          }
           return (
             <div className="step-row step-row--status" key={i}>
               <span className="step-ico"><span className="spinner" /></span>
@@ -170,13 +198,43 @@ export default function AppPage() {
             placeholder="Hey Sello, …"
             rows={1}
           />
-          <button type="submit" disabled={running || !task.trim()}>Run</button>
+          <button type="submit" disabled={running || !task.trim()}>Run for real</button>
         </form>
         <p className="app-foot">
-          Runs on connected-app fixtures so you can explore safely. <Link href="/">← Back to site</Link>
+          <button className="link-btn" onClick={() => run(task || SUGGESTIONS[0], true)} disabled={running}>
+            ▶ Preview the flow (simulated — sends nothing)
+          </button>
+          {"  ·  "}
+          <Link href="/">← Back to site</Link>
         </p>
       </div>
     </div>
+  );
+}
+
+function ConnChip({
+  label,
+  icon,
+  ok,
+  action,
+}: {
+  label: string;
+  icon: string;
+  ok: boolean;
+  action?: { href?: string; text?: string; hint?: string };
+}) {
+  return (
+    <span className={`conn-chip${ok ? " conn-chip--ok" : ""}`}>
+      <span>{icon}</span>
+      <strong>{label}</strong>
+      {ok ? (
+        <span className="conn-dot" aria-label="connected">connected</span>
+      ) : action?.href ? (
+        <a href={action.href}>{action.text}</a>
+      ) : (
+        <span className="conn-hint">{action?.hint}</span>
+      )}
+    </span>
   );
 }
 
@@ -184,9 +242,8 @@ function summarizeInput(input: Record<string, unknown>): string {
   if (!input) return "";
   if (input.to) return `to ${input.to}`;
   if (input.query) return `“${input.query}”`;
-  if (input.channel) return `${input.channel}: ${truncate(String(input.text ?? ""))}`;
   if (input.email) return `${input.email}${input.stage ? ` → ${input.stage}` : ""}`;
-  if (input.title) return String(input.title);
+  if (input.text) return truncate(String(input.text));
   return truncate(JSON.stringify(input));
 }
 
