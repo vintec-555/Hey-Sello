@@ -1,18 +1,20 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { tools, toolByName, type ToolResult } from "@/lib/tools";
+import { tools, toolByName, demoLeads, type ToolResult } from "@/lib/tools";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MODEL = "claude-opus-4-8";
 
-const SYSTEM = `You are Hey Sello, an AI automation agent. The user describes a task in plain English and you carry it out by calling the connected tools (Gmail, Slack, Notion, CRM).
+const SYSTEM = `You are Hey Sello, an AI automation agent. The user describes a task in plain English and you carry it out by calling the connected tools (Gmail, WhatsApp, CRM).
 
 Rules:
 - Work end to end. Plan briefly, then act with tools — don't ask for confirmation on routine, reversible steps.
-- When you handle a lead, reply to them AND log them in the CRM, then notify the team in Slack if relevant.
+- These are REAL actions: gmail_send_reply sends a real email, whatsapp_send sends a real WhatsApp message. Be accurate and professional.
+- If a tool returns that something "isn't connected", STOP pretending — tell the user plainly which app needs connecting and don't fabricate a result.
+- When you handle a lead, reply to them AND log them in the CRM.
 - Keep any text you emit short and human — you're narrating what you're doing for a watching user.
-- When the task is fully done, give a one or two sentence summary of what you accomplished.`;
+- When the task is fully done, give a one or two sentence summary of what you actually accomplished.`;
 
 type SSE = (event: string, data: unknown) => void;
 
@@ -20,9 +22,8 @@ function sseStream(run: (send: SSE) => Promise<void>): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      const send: SSE = (event, data) => {
+      const send: SSE = (event, data) =>
         controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
-      };
       try {
         await run(send);
       } catch (err) {
@@ -44,49 +45,48 @@ function sseStream(run: (send: SSE) => Promise<void>): Response {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function POST(req: Request) {
-  const { task } = (await req.json().catch(() => ({}))) as { task?: string };
+  const { task, demo } = (await req.json().catch(() => ({}))) as { task?: string; demo?: boolean };
   if (!task || !task.trim()) {
     return Response.json({ error: "Describe a task for Sello to run." }, { status: 400 });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-
-  // No key configured → run a faithful simulation so the product is fully
-  // explorable. Flip to the real agent by setting ANTHROPIC_API_KEY.
-  if (!apiKey) {
+  // Explicit, clearly-labeled simulation. Only runs when the client asks for it
+  // (the "Run sample (simulated)" button). Never mistaken for a real run.
+  if (demo) {
     return sseStream(async (send) => {
       send("mode", { live: false });
-      send("status", { text: "Planning the steps…" });
-      await sleep(600);
-
-      const search = await toolByName.gmail_search.run({ query: task });
-      send("tool", { app: "gmail", name: "gmail_search", input: { query: task } });
+      send("status", { text: "Simulating — no real messages are sent." });
       await sleep(500);
-      send("result", { summary: search.summary });
-      const leads = (search.data as { from: string; subject: string }[]) ?? [];
-
-      for (const lead of leads) {
-        send("tool", { app: "gmail", name: "gmail_send_reply", input: { to: lead.from, subject: `Re: ${lead.subject}` } });
-        await sleep(500);
-        send("result", { summary: `Replied to ${lead.from}.` });
-
-        send("tool", { app: "crm", name: "crm_upsert_contact", input: { email: lead.from, stage: "Contacted" } });
-        await sleep(450);
-        send("result", { summary: `Logged ${lead.from} in CRM as “Contacted”.` });
-      }
-
-      send("tool", { app: "slack", name: "slack_post_message", input: { channel: "#sales", text: `Handled ${leads.length} new lead(s).` } });
+      send("tool", { app: "gmail", name: "gmail_search", input: { query: task } });
       await sleep(450);
-      send("result", { summary: "Posted a summary to #sales." });
-
+      send("result", { summary: `Found ${demoLeads.length} example lead(s).` });
+      for (const lead of demoLeads) {
+        send("tool", { app: "gmail", name: "gmail_send_reply", input: { to: lead.from, subject: `Re: ${lead.subject}` } });
+        await sleep(450);
+        send("result", { summary: `(simulated) Replied to ${lead.from}.` });
+        send("tool", { app: "crm", name: "crm_upsert_contact", input: { email: lead.from, stage: "Contacted" } });
+        await sleep(400);
+        send("result", { summary: `(simulated) Logged ${lead.from} in CRM.` });
+      }
       send("message", {
-        text: `Done — I replied to ${leads.length} lead${leads.length === 1 ? "" : "s"}, logged ${leads.length === 1 ? "it" : "them"} in the CRM, and pinged #sales. (Demo mode: set ANTHROPIC_API_KEY to run this for real.)`,
+        text: `Simulation complete — this is a preview of the flow. Connect Gmail/WhatsApp and add an API key to run it for real.`,
       });
       send("done", {});
     });
   }
 
-  // Real agent loop.
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return sseStream(async (send) => {
+      send("mode", { live: false });
+      send("message", {
+        text: "The agent isn't switched on yet — add ANTHROPIC_API_KEY to run real tasks, or try the simulated sample to preview the flow.",
+      });
+      send("done", {});
+    });
+  }
+
+  // Real agent loop over the live tools.
   const client = new Anthropic({ apiKey });
   const apiTools = tools.map((t) => ({
     name: t.name,
@@ -108,9 +108,7 @@ export async function POST(req: Request) {
       });
 
       for (const block of res.content) {
-        if (block.type === "text" && block.text.trim()) {
-          send("message", { text: block.text });
-        }
+        if (block.type === "text" && block.text.trim()) send("message", { text: block.text });
       }
 
       if (res.stop_reason !== "tool_use") {
@@ -133,7 +131,7 @@ export async function POST(req: Request) {
         } catch (e) {
           result = { ok: false, summary: e instanceof Error ? e.message : "Tool failed." };
         }
-        send("result", { summary: result.summary });
+        send("result", { summary: result.summary, ok: result.ok });
         toolResults.push({
           type: "tool_result",
           tool_use_id: block.id,

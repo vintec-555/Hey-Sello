@@ -398,3 +398,20 @@ h1 {
 .composer button:disabled { opacity: .55; cursor: default; }
 .app-foot { text-align: center; color: var(--ink-soft); font-size: 0.82rem; padding: 4px 0 10px; }
 .app-foot a { color: var(--violet); }
+
+/* Connections bar (/app) */
+.conn-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.conn-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid var(--line); background: var(--white);
+  border-radius: 999px; padding: 6px 12px; font-size: 0.85rem; color: var(--ink-soft);
+}
+.conn-chip strong { color: var(--ink); font-weight: 700; }
+.conn-chip--ok { border-color: rgba(78,205,196,0.5); background: rgba(78,205,196,0.08); }
+.conn-chip a { color: var(--violet); font-weight: 700; text-decoration: none; }
+.conn-chip a:hover { text-decoration: underline; }
+.conn-dot { color: #0f9b8e; font-weight: 700; }
+.conn-hint { font-size: 0.78rem; opacity: 0.7; font-family: ui-monospace, monospace; }
+.link-btn { background: none; border: none; color: var(--violet); font: inherit; cursor: pointer; padding: 0; }
+.link-btn:hover { text-decoration: underline; }
+.link-btn:disabled { opacity: .5; cursor: default; text-decoration: none; }
