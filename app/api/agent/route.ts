@@ -1,20 +1,43 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { tools, toolByName, demoLeads, type ToolResult } from "@/lib/tools";
+import { getBusinessProfile, businessContext } from "@/lib/business";
+import { currentUserId } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MODEL = "claude-opus-4-8";
+const SEND_TOOLS = new Set(["gmail_send_reply", "whatsapp_send"]);
 
-const SYSTEM = `You are Hey Sello, an AI automation agent. The user describes a task in plain English and you carry it out by calling the connected tools (Gmail, WhatsApp, CRM).
+const SYSTEM = `You are Hey Sello, a friendly, professional AI assistant that does real work across a small business owner's tools (Gmail, WhatsApp, CRM).
 
-Rules:
-- Work end to end. Plan briefly, then act with tools — don't ask for confirmation on routine, reversible steps.
-- These are REAL actions: gmail_send_reply sends a real email, whatsapp_send sends a real WhatsApp message. Be accurate and professional.
-- If a tool returns that something "isn't connected", STOP pretending — tell the user plainly which app needs connecting and don't fabricate a result.
-- When you handle a lead, reply to them AND log them in the CRM.
-- Keep any text you emit short and human — you're narrating what you're doing for a watching user.
-- When the task is fully done, give a one or two sentence summary of what you actually accomplished.`;
+HOW TO ACT
+- Work end to end. Briefly plan, then use the tools. Don't ask permission for routine, reversible steps.
+- These are REAL actions: gmail_send_reply sends a real email; whatsapp_send sends a real WhatsApp message. Be careful and professional.
+- If a tool says something "isn't connected", stop and tell the user — in plain words — which app to connect. Never invent results.
+- When you handle a lead, reply to them and save them in the CRM.
+- Inbox searches return a 'total' (the real number of matching emails) and a sample of the most recent. ALWAYS state the real total to the user (e.g. "You have about 10,000 unread emails") and make clear that you've grouped/summarized the most recent ones — never imply the sample size is the total.
+
+HOW TO WRITE YOUR REPLIES — the reader is a busy, non-technical business owner, so this matters as much as the work itself:
+- Use clear, simple, warm, professional English. No jargon, no technical terms, no email search syntax, no internal tool names.
+- Be short and skimmable. Lead with the bottom line in ONE sentence.
+- When you list things (e.g. emails), use a bullet list: each item on its own line starting with "- ", and put the sender or subject in **double asterisks**. Keep each bullet to one short line. Example:
+
+You have 10 unread emails — nothing urgent.
+- **LinkedIn** — 2 notifications, no reply needed
+- **Acquire.com** — 4 new listings that match what you're looking for
+Bottom line: only the Acquire alerts may be worth a quick look.
+
+- Avoid long paragraphs. Prefer: one-line intro → bullets → one-line "Bottom line:".
+- While working, emit at most ONE short status line (e.g. "Checking your inbox…"). Don't narrate every step.
+- Finish with a friendly one-line summary of what you did or found.
+
+WHEN YOU SEND AN EMAIL (gmail_send_reply) — write it like a thoughtful professional:
+- Start with a proper greeting using the person's first name when you know it (e.g. "Hi Ravi,").
+- A clear, concise body that directly addresses their message — answer their actual question, keep it warm and to the point.
+- A polite sign-off ("Best regards," / "Thanks,") followed by the sender's name or "The team".
+- PLAIN TEXT only in the email body — no markdown, asterisks, bullets, or emoji. Proper sentences and line breaks.
+- Keep it short unless detail is genuinely needed. Never send a one-line abrupt reply.`;
 
 type SSE = (event: string, data: unknown) => void;
 
@@ -45,7 +68,11 @@ function sseStream(run: (send: SSE) => Promise<void>): Response {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function POST(req: Request) {
-  const { task, demo } = (await req.json().catch(() => ({}))) as { task?: string; demo?: boolean };
+  const { task, demo, review = true } = (await req.json().catch(() => ({}))) as {
+    task?: string;
+    demo?: boolean;
+    review?: boolean;
+  };
   if (!task || !task.trim()) {
     return Response.json({ error: "Describe a task for Sello to run." }, { status: 400 });
   }
@@ -75,6 +102,9 @@ export async function POST(req: Request) {
     });
   }
 
+  const uid = await currentUserId();
+  if (!uid) return Response.json({ error: "Please sign in." }, { status: 401 });
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return sseStream(async (send) => {
@@ -96,13 +126,14 @@ export async function POST(req: Request) {
 
   return sseStream(async (send) => {
     send("mode", { live: true });
+    const system = SYSTEM + businessContext(await getBusinessProfile(uid));
     const messages: Anthropic.MessageParam[] = [{ role: "user", content: task }];
 
     for (let turn = 0; turn < 12; turn++) {
       const res = await client.messages.create({
         model: MODEL,
         max_tokens: 2048,
-        system: SYSTEM,
+        system,
         tools: apiTools,
         messages,
       });
@@ -121,12 +152,33 @@ export async function POST(req: Request) {
 
       for (const block of res.content) {
         if (block.type !== "tool_use") continue;
+
+        // Review-before-send: don't send now — show the draft for approval.
+        if (review && SEND_TOOLS.has(block.name)) {
+          const inp = block.input as Record<string, string>;
+          if (block.name === "gmail_send_reply") {
+            send("draft", { id: block.id, app: "gmail", to: inp.to, subject: inp.subject, body: inp.body });
+          } else {
+            send("draft", { id: block.id, app: "whatsapp", to: inp.to, body: inp.text });
+          }
+          toolResults.push({
+            type: "tool_result",
+            tool_use_id: block.id,
+            content: JSON.stringify({
+              ok: true,
+              pending: true,
+              summary: "Draft prepared and shown to the user for approval — it has NOT been sent yet.",
+            }),
+          });
+          continue;
+        }
+
         const tool = toolByName[block.name];
         send("tool", { app: tool?.app ?? "app", name: block.name, input: block.input });
         let result: ToolResult;
         try {
           result = tool
-            ? await tool.run(block.input as Record<string, unknown>)
+            ? await tool.run(block.input as Record<string, unknown>, uid)
             : { ok: false, summary: `Unknown tool: ${block.name}` };
         } catch (e) {
           result = { ok: false, summary: e instanceof Error ? e.message : "Tool failed." };
