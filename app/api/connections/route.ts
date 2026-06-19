@@ -14,5 +14,6 @@ export async function GET() {
       configured: whatsappConfigured(),
       connected: whatsappConfigured(),
     },
+    voice: { premium: Boolean(process.env.ELEVENLABS_API_KEY) },
   });
 }

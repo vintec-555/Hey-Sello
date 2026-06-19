@@ -24,6 +24,7 @@ type Connections = {
   agent: boolean;
   gmail: { configured: boolean; connected: boolean };
   whatsapp: { configured: boolean; connected: boolean };
+  voice?: { premium: boolean };
 };
 
 const APP_ICON: Record<string, string> = { gmail: "📧", whatsapp: "💬", crm: "📇", app: "⟳" };
@@ -52,7 +53,11 @@ export default function AppPage() {
   const voice = useVoice((t) => { setTask(t); runRef.current(t); });
 
   useEffect(() => {
-    fetch("/api/connections").then((r) => r.json()).then(setConn).catch(() => {});
+    fetch("/api/connections")
+      .then((r) => r.json())
+      .then((d) => { setConn(d); voice.setPremium(Boolean(d?.voice?.premium)); })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function push(s: Step) {

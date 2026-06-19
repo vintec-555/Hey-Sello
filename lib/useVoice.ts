@@ -1,9 +1,9 @@
 "use client";
 
-// Free, browser-native voice for Hey Sello.
-// STT: Web Speech API (SpeechRecognition) listening for the "Hey Sello" wake word.
-// TTS: SpeechSynthesis speaks the agent's replies.
-// No API keys, no backend. Works in Chrome/Edge/Safari (not Firefox).
+// Voice for Hey Sello.
+// STT: Web Speech API (SpeechRecognition) listening for the "Hey Sello" wake word — free.
+// TTS: ElevenLabs (natural voice) when configured, else the browser's SpeechSynthesis.
+// Works in Chrome/Edge/Safari (not Firefox).
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type VoiceStatus = "off" | "wake" | "listening" | "thinking" | "speaking";
@@ -18,9 +18,11 @@ export function useVoice(onCommand: (text: string) => void) {
   const recRef = useRef<any>(null);
   const onRef = useRef(on);
   const speakingRef = useRef(false);
-  const awaitingRef = useRef(false); // heard "Hey Sello" alone, next utterance is the command
+  const awaitingRef = useRef(false);
   const queueRef = useRef<string[]>([]);
   const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
+  const premiumRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const cmdRef = useRef(onCommand);
   cmdRef.current = onCommand;
   onRef.current = on;
@@ -35,7 +37,7 @@ export function useVoice(onCommand: (text: string) => void) {
     return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", load);
   }, []);
 
-  const startRec = useCallback(() => {
+  function startRec() {
     if (typeof window === "undefined" || !onRef.current || speakingRef.current) return;
     try {
       recRef.current?.start();
@@ -43,53 +45,75 @@ export function useVoice(onCommand: (text: string) => void) {
     } catch {
       /* already started */
     }
-  }, []);
+  }
 
-  const pickVoice = () => {
+  function pickVoice() {
     const vs = voicesRef.current;
     return (
       vs.find((v) => /en[-_]US/i.test(v.lang) && /(Google US|Samantha|Aria|Natural|Jenny)/i.test(v.name)) ||
       vs.find((v) => /^en/i.test(v.lang)) ||
       vs[0]
     );
-  };
+  }
 
-  const drain = useCallback(() => {
-    const next = queueRef.current.shift();
-    if (!next) {
-      speakingRef.current = false;
-      startRec();
-      return;
-    }
-    speakingRef.current = true;
-    setStatus("speaking");
-    const u = new SpeechSynthesisUtterance(next);
+  // Browser TTS (free fallback).
+  function playBrowser(text: string) {
+    if (typeof window === "undefined" || !window.speechSynthesis) return drain();
+    const u = new SpeechSynthesisUtterance(text);
     u.rate = 1.03;
     const v = pickVoice();
     if (v) u.voice = v;
     u.onend = drain;
     u.onerror = drain;
     window.speechSynthesis.speak(u);
-  }, [startRec]);
+  }
 
-  // Speak text aloud (recognition is paused while speaking to avoid feedback).
-  const speak = useCallback(
-    (text: string) => {
-      if (!onRef.current || typeof window === "undefined" || !window.speechSynthesis) return;
-      const clean = text.replace(/\*\*/g, "").replace(/[#*_`>]/g, "").slice(0, 600);
-      try {
-        recRef.current?.stop();
-      } catch {}
-      queueRef.current.push(clean);
-      if (!speakingRef.current) drain();
-    },
-    [drain],
-  );
+  // ElevenLabs TTS (premium); falls back to the browser voice on any error.
+  async function playPremium(text: string) {
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error("tts");
+      const url = URL.createObjectURL(await res.blob());
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => { URL.revokeObjectURL(url); drain(); };
+      audio.onerror = () => { URL.revokeObjectURL(url); playBrowser(text); };
+      await audio.play();
+    } catch {
+      playBrowser(text);
+    }
+  }
 
-  const handle = useCallback((transcript: string) => {
+  function drain() {
+    const next = queueRef.current.shift();
+    if (!next) {
+      speakingRef.current = false;
+      audioRef.current = null;
+      startRec();
+      return;
+    }
+    speakingRef.current = true;
+    setStatus("speaking");
+    if (premiumRef.current) playPremium(next);
+    else playBrowser(next);
+  }
+
+  function speak(text: string) {
+    if (!onRef.current) return;
+    const clean = text.replace(/\*\*/g, "").replace(/[#*_`>]/g, "").slice(0, 700).trim();
+    if (!clean) return;
+    try { recRef.current?.stop(); } catch {}
+    queueRef.current.push(clean);
+    if (!speakingRef.current) drain();
+  }
+
+  function handle(transcript: string) {
     const raw = transcript.trim();
     const t = raw.toLowerCase();
-
     if (awaitingRef.current) {
       awaitingRef.current = false;
       setStatus("thinking");
@@ -97,8 +121,9 @@ export function useVoice(onCommand: (text: string) => void) {
       cmdRef.current(raw);
       return;
     }
-    const hit = WAKE.map((w) => t.indexOf(w)).filter((i) => i >= 0).sort((a, b) => a - b)[0];
-    if (hit === undefined) return;
+    const hits = WAKE.map((w) => t.indexOf(w)).filter((i) => i >= 0).sort((a, b) => a - b);
+    if (hits.length === 0) return;
+    const hit = hits[0];
     const w = WAKE.find((x) => t.indexOf(x) === hit)!;
     const after = raw.slice(hit + w.length).replace(/^[\s,.!?]+/, "").trim();
     if (after) {
@@ -109,7 +134,7 @@ export function useVoice(onCommand: (text: string) => void) {
       awaitingRef.current = true;
       setStatus("listening");
     }
-  }, []);
+  }
 
   const enable = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -117,7 +142,6 @@ export function useVoice(onCommand: (text: string) => void) {
     if (!SR) { setSupported(false); return; }
     setOn(true);
     onRef.current = true;
-    // Unlock speechSynthesis + confirm with a short greeting (must be in a user gesture).
     speak("Voice on. Say, Hey Sello, then your task.");
     const rec = new SR();
     rec.continuous = true;
@@ -128,9 +152,14 @@ export function useVoice(onCommand: (text: string) => void) {
       if (r.isFinal) handle(r[0].transcript as string);
     };
     rec.onend = () => { if (onRef.current && !speakingRef.current) startRec(); };
-    rec.onerror = (e: any) => { if (e.error === "not-allowed") { setOn(false); onRef.current = false; setStatus("off"); } };
+    rec.onerror = (e: any) => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        setOn(false); onRef.current = false; setStatus("off");
+      }
+    };
     recRef.current = rec;
-  }, [handle, speak, startRec]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const disable = useCallback(() => {
     setOn(false);
@@ -141,13 +170,17 @@ export function useVoice(onCommand: (text: string) => void) {
     setStatus("off");
     try { recRef.current?.stop(); } catch {}
     try { window.speechSynthesis?.cancel(); } catch {}
+    try { audioRef.current?.pause(); } catch {}
     recRef.current = null;
+    audioRef.current = null;
   }, []);
 
-  // Call when an agent run finishes with no spoken reply, to resume listening.
   const resume = useCallback(() => {
     if (onRef.current && !speakingRef.current) startRec();
-  }, [startRec]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  return { on, status, supported, enable, disable, speak, resume, setStatus };
+  const setPremium = useCallback((v: boolean) => { premiumRef.current = v; }, []);
+
+  return { on, status, supported, enable, disable, speak, resume, setPremium };
 }
