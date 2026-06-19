@@ -20,7 +20,10 @@ type Step =
   | { kind: "tool"; app: string; name: string; input: Record<string, unknown> }
   | { kind: "result"; text: string; ok?: boolean }
   | { kind: "message"; text: string }
-  | { kind: "error"; text: string };
+  | { kind: "error"; text: string }
+  | { kind: "draft"; id: string; app: string; to: string; subject?: string; body: string };
+
+type DraftState = "pending" | "sending" | "sent" | "error" | "discarded";
 
 type Connections = {
   agent: boolean;
@@ -54,6 +57,34 @@ export default function AppPage() {
   const runRef = useRef<(t: string) => void>(() => {});
   const voice = useVoice((t) => { setTask(t); runRef.current(t); });
   const [voiceId, setVoiceId] = useState(DEFAULT_VOICE_ID);
+  const [review, setReview] = useState(true);
+  const [draftStatus, setDraftStatus] = useState<Record<string, DraftState>>({});
+
+  useEffect(() => {
+    const saved = typeof window !== "undefined" && localStorage.getItem("sello.review");
+    if (saved === "off") setReview(false);
+  }, []);
+
+  function chooseReview(v: boolean) {
+    setReview(v);
+    try { localStorage.setItem("sello.review", v ? "on" : "off"); } catch {}
+  }
+
+  async function approveDraft(d: { id: string; app: string; to: string; subject?: string; body: string }) {
+    setDraftStatus((s) => ({ ...s, [d.id]: "sending" }));
+    try {
+      const res = await fetch("/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ app: d.app, to: d.to, subject: d.subject, body: d.body }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Send failed");
+      setDraftStatus((s) => ({ ...s, [d.id]: "sent" }));
+    } catch {
+      setDraftStatus((s) => ({ ...s, [d.id]: "error" }));
+    }
+  }
 
   useEffect(() => {
     const saved = typeof window !== "undefined" && localStorage.getItem("sello.voice");
@@ -85,13 +116,14 @@ export default function AppPage() {
   async function run(text: string, demo = false) {
     if (!text.trim() || running) return;
     setSteps([]);
+    setDraftStatus({});
     setLive(null);
     setRunning(true);
     try {
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task: text, demo }),
+        body: JSON.stringify({ task: text, demo, review }),
       });
       if (!res.body) throw new Error("No response stream.");
       const reader = res.body.getReader();
@@ -113,6 +145,7 @@ export default function AppPage() {
           else if (ev === "tool") push({ kind: "tool", app: p.app, name: p.name, input: p.input });
           else if (ev === "result") push({ kind: "result", text: p.summary, ok: p.ok });
           else if (ev === "message") { push({ kind: "message", text: p.text }); if (voice.on) voice.speak(p.text); }
+          else if (ev === "draft") { push({ kind: "draft", id: p.id, app: p.app, to: p.to, subject: p.subject, body: p.body }); setDraftStatus((s) => ({ ...s, [p.id]: "pending" })); }
           else if (ev === "error") push({ kind: "error", text: p.message });
         }
       }
@@ -222,6 +255,37 @@ export default function AppPage() {
                 <div className="step-body targ">{s.text}</div>
               </div>
             );
+          if (s.kind === "draft") {
+            const st = draftStatus[s.id] ?? "pending";
+            return (
+              <div className="step-row" key={i}>
+                <span className="step-ico">✉️</span>
+                <div className="draft-card">
+                  <div className="draft-card__head">
+                    <span className="draft-card__app">{s.app === "whatsapp" ? "WhatsApp draft" : "Email draft"}</span>
+                    <span className="draft-card__to">to {s.to}</span>
+                  </div>
+                  {s.subject && <div className="draft-card__subj">{s.subject}</div>}
+                  <div className="draft-card__body">{s.body}</div>
+                  {st === "pending" && (
+                    <div className="draft-card__actions">
+                      <button className="btn-approve" onClick={() => approveDraft(s)}>Approve &amp; send</button>
+                      <button className="btn-discard" onClick={() => setDraftStatus((m) => ({ ...m, [s.id]: "discarded" }))}>Discard</button>
+                    </div>
+                  )}
+                  {st === "sending" && <div className="draft-card__status"><span className="spinner" /> Sending…</div>}
+                  {st === "sent" && <div className="draft-card__status is-sent">✓ Sent</div>}
+                  {st === "discarded" && <div className="draft-card__status is-off">Discarded</div>}
+                  {st === "error" && (
+                    <div className="draft-card__actions">
+                      <span className="draft-card__status is-err">Couldn’t send.</span>
+                      <button className="btn-approve" onClick={() => approveDraft(s)}>Retry</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
           if (s.kind === "message")
             return (
               <div className="step-row step-row--msg" key={i}>
@@ -253,6 +317,13 @@ export default function AppPage() {
       </div>
 
       <div className="composer">
+        <label className="review-toggle" title="When on, Sello shows you each email/message to approve before it sends.">
+          <input type="checkbox" checked={review} onChange={(e) => chooseReview(e.target.checked)} />
+          <span className="review-toggle__track"><span className="review-toggle__thumb" /></span>
+          <span className="review-toggle__label">
+            🛡️ Review before send{review ? "" : " · off — sends immediately"}
+          </span>
+        </label>
         <form onSubmit={(e) => { e.preventDefault(); run(task); }}>
           <textarea
             value={task}

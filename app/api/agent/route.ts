@@ -5,6 +5,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MODEL = "claude-opus-4-8";
+const SEND_TOOLS = new Set(["gmail_send_reply", "whatsapp_send"]);
 
 const SYSTEM = `You are Hey Sello, a friendly, professional AI assistant that does real work across a small business owner's tools (Gmail, WhatsApp, CRM).
 
@@ -65,7 +66,11 @@ function sseStream(run: (send: SSE) => Promise<void>): Response {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function POST(req: Request) {
-  const { task, demo } = (await req.json().catch(() => ({}))) as { task?: string; demo?: boolean };
+  const { task, demo, review = true } = (await req.json().catch(() => ({}))) as {
+    task?: string;
+    demo?: boolean;
+    review?: boolean;
+  };
   if (!task || !task.trim()) {
     return Response.json({ error: "Describe a task for Sello to run." }, { status: 400 });
   }
@@ -141,6 +146,27 @@ export async function POST(req: Request) {
 
       for (const block of res.content) {
         if (block.type !== "tool_use") continue;
+
+        // Review-before-send: don't send now — show the draft for approval.
+        if (review && SEND_TOOLS.has(block.name)) {
+          const inp = block.input as Record<string, string>;
+          if (block.name === "gmail_send_reply") {
+            send("draft", { id: block.id, app: "gmail", to: inp.to, subject: inp.subject, body: inp.body });
+          } else {
+            send("draft", { id: block.id, app: "whatsapp", to: inp.to, body: inp.text });
+          }
+          toolResults.push({
+            type: "tool_result",
+            tool_use_id: block.id,
+            content: JSON.stringify({
+              ok: true,
+              pending: true,
+              summary: "Draft prepared and shown to the user for approval — it has NOT been sent yet.",
+            }),
+          });
+          continue;
+        }
+
         const tool = toolByName[block.name];
         send("tool", { app: tool?.app ?? "app", name: block.name, input: block.input });
         let result: ToolResult;
