@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { getBusinessProfile, businessContext } from "@/lib/business";
 
 const DRAFT_SYSTEM = `You are Hey Sello, drafting a reply to an incoming business email on the owner's behalf.
 Write a complete, professional reply in PLAIN TEXT (no markdown, asterisks, or emoji):
@@ -14,7 +15,7 @@ export async function generateReply(email: { from: string; subject: string; snip
   const res = await client.messages.create({
     model: "claude-opus-4-8",
     max_tokens: 600,
-    system: DRAFT_SYSTEM,
+    system: DRAFT_SYSTEM + businessContext(await getBusinessProfile()),
     messages: [
       {
         role: "user",

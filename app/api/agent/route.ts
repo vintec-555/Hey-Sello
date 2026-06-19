@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { tools, toolByName, demoLeads, type ToolResult } from "@/lib/tools";
+import { getBusinessProfile, businessContext } from "@/lib/business";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -121,13 +122,14 @@ export async function POST(req: Request) {
 
   return sseStream(async (send) => {
     send("mode", { live: true });
+    const system = SYSTEM + businessContext(await getBusinessProfile());
     const messages: Anthropic.MessageParam[] = [{ role: "user", content: task }];
 
     for (let turn = 0; turn < 12; turn++) {
       const res = await client.messages.create({
         model: MODEL,
         max_tokens: 2048,
-        system: SYSTEM,
+        system,
         tools: apiTools,
         messages,
       });

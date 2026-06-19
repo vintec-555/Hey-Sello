@@ -190,6 +190,7 @@ export default function AppPage() {
           <Logo />
         </Link>
         <div className="app-head__right">
+          <Link href="/app/business" className="nav__link" style={{ fontSize: "0.85rem" }}>🧠 Business Brain</Link>
           {voice.supported && (
             <button
               className={`voice-btn${voice.on ? " voice-btn--on" : ""}`}
