@@ -24,6 +24,7 @@ type Step =
   | { kind: "draft"; id: string; app: string; to: string; subject?: string; body: string };
 
 type DraftState = "pending" | "sending" | "sent" | "error" | "discarded";
+type Pending = { id: string; from: string; fromEmail: string; subject: string; replySubject: string; replyBody: string };
 
 type Connections = {
   agent: boolean;
@@ -113,6 +114,30 @@ export default function AppPage() {
     requestAnimationFrame(() => feedRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }));
   }
 
+  const [pending, setPending] = useState<Pending[]>([]);
+  const [pendingStatus, setPendingStatus] = useState<Record<string, "sending" | "sent" | "discarded" | "error">>({});
+
+  useEffect(() => {
+    fetch("/api/drafts").then((r) => r.json()).then((d) => setPending(d.drafts ?? [])).catch(() => {});
+  }, []);
+
+  async function resolvePending(p: Pending, action: "approve" | "discard") {
+    setPendingStatus((s) => ({ ...s, [p.id]: action === "approve" ? "sending" : "discarded" }));
+    try {
+      const r = await fetch("/api/drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: p.id, action }),
+      });
+      if (action === "approve") {
+        if (!r.ok) throw new Error();
+        setPendingStatus((s) => ({ ...s, [p.id]: "sent" }));
+      }
+    } catch {
+      setPendingStatus((s) => ({ ...s, [p.id]: "error" }));
+    }
+  }
+
   async function run(text: string, demo = false) {
     if (!text.trim() || running) return;
     setSteps([]);
@@ -186,6 +211,45 @@ export default function AppPage() {
         <div className="voice-status">
           <span className="voice-pulse" />
           {VOICE_LABEL[voice.status]}
+        </div>
+      )}
+
+      {pending.length > 0 && (
+        <div className="pending-panel">
+          <div className="pending-panel__head">
+            <span className="pending-panel__title">
+              ✨ Sello handled {pending.length} message{pending.length > 1 ? "s" : ""} while you were away
+            </span>
+            <span className="pending-panel__sub">Review the replies it drafted — nothing sends until you approve.</span>
+          </div>
+          {pending.map((p) => {
+            const st = pendingStatus[p.id];
+            if (st === "discarded") return null;
+            return (
+              <div className="draft-card" key={p.id}>
+                <div className="draft-card__head">
+                  <span className="draft-card__app">Email draft</span>
+                  <span className="draft-card__to">to {p.fromEmail}</span>
+                </div>
+                <div className="draft-card__subj">{p.replySubject}</div>
+                <div className="draft-card__body">{p.replyBody}</div>
+                {!st && (
+                  <div className="draft-card__actions">
+                    <button className="btn-approve" onClick={() => resolvePending(p, "approve")}>Approve &amp; send</button>
+                    <button className="btn-discard" onClick={() => resolvePending(p, "discard")}>Discard</button>
+                  </div>
+                )}
+                {st === "sending" && <div className="draft-card__status"><span className="spinner" /> Sending…</div>}
+                {st === "sent" && <div className="draft-card__status is-sent">✓ Sent</div>}
+                {st === "error" && (
+                  <div className="draft-card__actions">
+                    <span className="draft-card__status is-err">Couldn’t send.</span>
+                    <button className="btn-approve" onClick={() => resolvePending(p, "approve")}>Retry</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
