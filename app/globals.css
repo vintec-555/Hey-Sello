@@ -356,3 +356,46 @@ h1 { font-size: clamp(2.7rem, 7vw, 4.7rem); line-height: 1.03; letter-spacing: -
 .auth-error { color: var(--pink); font-size: 0.88rem; font-weight: 600; margin: -2px 0 0; }
 .auth-switch { text-align: center; color: var(--text-soft); font-size: 0.9rem; margin-top: 18px; }
 .auth-switch a { color: var(--violet); text-decoration: none; font-weight: 700; }
+.auth-google { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px 14px; font: inherit; font-weight: 700; font-size: 0.95rem; color: var(--text); background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 12px; cursor: pointer; text-decoration: none; transition: border-color .15s, background .15s; }
+.auth-google:hover { border-color: var(--violet); background: var(--surface); }
+.auth-or { display: flex; align-items: center; text-align: center; color: var(--text-dim); font-size: 0.82rem; margin: 16px 0; }
+.auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--line-2); }
+.auth-or span { padding: 0 12px; }
+.auth-forgot { text-align: right; margin: -6px 0 0; font-size: 0.84rem; }
+.auth-forgot a { color: var(--text-soft); text-decoration: none; }
+.auth-forgot a:hover { color: var(--violet); }
+
+/* ---------- Onboarding ---------- */
+.ob { max-width: 640px; margin: 0 auto; padding: 24px; }
+.ob-title { font-size: 1.7rem; letter-spacing: -0.02em; }
+.ob-sub { color: var(--text-soft); margin: 6px 0 22px; }
+.ob-progress { height: 6px; background: var(--bg-2); border-radius: 999px; overflow: hidden; margin-bottom: 26px; }
+.ob-progress__bar { height: 100%; background: linear-gradient(90deg, var(--violet), var(--pink)); border-radius: 999px; transition: width .4s ease; }
+.ob-steps { list-style: none; display: flex; flex-direction: column; gap: 14px; padding: 0; margin: 0; }
+.ob-step { display: flex; gap: 16px; padding: 20px; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--radius-lg); }
+.ob-step--done { opacity: 0.82; }
+.ob-step__num { flex: none; width: 32px; height: 32px; border-radius: 999px; display: grid; place-items: center; font-weight: 800; background: var(--bg-2); border: 1px solid var(--line-2); color: var(--text-soft); }
+.ob-step--done .ob-step__num { background: var(--violet); border-color: var(--violet); color: #fff; }
+.ob-step__title { font-size: 1.05rem; margin: 2px 0 4px; }
+.ob-step__body { color: var(--text-soft); font-size: 0.92rem; margin: 0 0 12px; }
+.ob-done { color: #4ade80; font-weight: 700; font-size: 0.92rem; }
+.ob-note { color: var(--text-dim); font-size: 0.9rem; }
+.ob-finish { margin-top: 24px; text-align: center; }
+
+/* ---------- Billing ---------- */
+.bill { max-width: 760px; margin: 0 auto; padding: 24px; }
+.bill-title { font-size: 1.7rem; letter-spacing: -0.02em; }
+.bill-sub { color: var(--text-soft); margin: 6px 0 24px; }
+.bill-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.bill-card { position: relative; padding: 26px 24px; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--radius-lg); }
+.bill-card--pro { border-color: var(--violet); }
+.bill-card--current { box-shadow: 0 0 0 1px var(--violet); }
+.bill-card__name { font-size: 1.1rem; }
+.bill-card__price { font-size: 2rem; font-weight: 800; margin: 6px 0 16px; letter-spacing: -0.02em; }
+.bill-card__price span { font-size: 1rem; font-weight: 600; color: var(--text-dim); }
+.bill-card__list { list-style: none; padding: 0; margin: 0 0 18px; display: flex; flex-direction: column; gap: 8px; }
+.bill-card__list li { color: var(--text-soft); font-size: 0.92rem; padding-left: 22px; position: relative; }
+.bill-card__list li::before { content: "✓"; position: absolute; left: 0; color: var(--violet); font-weight: 800; }
+.bill-card__tag { text-align: center; font-weight: 700; font-size: 0.88rem; color: var(--text-soft); padding: 10px; background: var(--bg-2); border-radius: 12px; }
+.bill-note { color: var(--text-dim); font-size: 0.88rem; margin-top: 18px; }
+@media (max-width: 640px) { .bill-grid { grid-template-columns: 1fr; } }

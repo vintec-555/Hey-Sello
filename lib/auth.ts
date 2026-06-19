@@ -61,3 +61,48 @@ export async function currentUserEmail(uid: string): Promise<string | null> {
   const u = await getStored<{ email: string }>(`user:id:${uid}`);
   return u?.email ?? null;
 }
+
+// ---- Google sign-in (passwordless) + password reset ------------------------
+
+export async function findOrCreateOAuthUser(emailRaw: string): Promise<User> {
+  const email = emailRaw.toLowerCase().trim();
+  const existing = await getStored<User>(`user:email:${email}`);
+  if (existing) return existing;
+  const id = randomBytes(8).toString("hex");
+  const user: User = { id, email, salt: "", hash: "", createdAt: new Date().toISOString() };
+  await setStored(`user:email:${email}`, user);
+  await setStored(`user:id:${id}`, { id, email });
+  const list = (await getStored<string[]>("users")) ?? [];
+  if (!list.includes(id)) {
+    list.push(id);
+    await setStored("users", list);
+  }
+  return user;
+}
+
+export async function createResetToken(emailRaw: string): Promise<string | null> {
+  const email = emailRaw.toLowerCase().trim();
+  const user = await getStored<User>(`user:email:${email}`);
+  if (!user) return null;
+  const token = randomBytes(24).toString("hex");
+  await setStored(`reset:${token}`, { userId: user.id, exp: Date.now() + 1000 * 60 * 30 });
+  return token;
+}
+
+export async function consumeResetToken(token: string): Promise<string | null> {
+  const r = await getStored<{ userId: string; exp: number }>(`reset:${token}`);
+  if (!r || r.exp < Date.now()) return null;
+  await setStored(`reset:${token}`, null);
+  return r.userId;
+}
+
+export async function setPassword(userId: string, password: string): Promise<boolean> {
+  const map = await getStored<{ email: string }>(`user:id:${userId}`);
+  if (!map) return false;
+  const user = await getStored<User>(`user:email:${map.email}`);
+  if (!user) return false;
+  user.salt = randomBytes(16).toString("hex");
+  user.hash = hashPw(password, user.salt);
+  await setStored(`user:email:${user.email}`, user);
+  return true;
+}

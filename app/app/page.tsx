@@ -191,6 +191,7 @@ export default function AppPage() {
         </Link>
         <div className="app-head__right">
           <Link href="/app/business" className="nav__link" style={{ fontSize: "0.85rem" }}>🧠 Business Brain</Link>
+          <Link href="/app/billing" className="nav__link" style={{ fontSize: "0.85rem" }}>Plans</Link>
           <button
             className="nav__link"
             style={{ fontSize: "0.85rem", background: "none", border: "none", cursor: "pointer" }}
