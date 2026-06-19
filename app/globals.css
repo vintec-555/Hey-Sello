@@ -245,3 +245,20 @@ h1 { font-size: clamp(2.7rem, 7vw, 4.7rem); line-height: 1.03; letter-spacing: -
   .footer__copy { text-align: left; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; transition: none !important; animation: none !important; } }
+
+/* ---------- Voice ---------- */
+.app-head__right { display: flex; align-items: center; gap: 10px; }
+.voice-btn {
+  display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 0.82rem; font-weight: 700;
+  cursor: pointer; color: var(--text-soft); background: var(--surface); border: 1px solid var(--line-2);
+  border-radius: 999px; padding: 6px 13px; transition: all .15s;
+}
+.voice-btn:hover { color: var(--text); border-color: var(--violet); }
+.voice-btn--on { color: #fff; background: linear-gradient(120deg, var(--violet-2), var(--violet)); border-color: transparent; box-shadow: var(--glow); }
+.voice-status {
+  display: flex; align-items: center; gap: 9px; margin: 14px 0 0; padding: 11px 16px;
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: 999px;
+  font-size: 0.9rem; font-weight: 600; color: var(--text);
+}
+.voice-pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 0 0 rgba(139,123,255,0.6); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(139,123,255,0.55); } 70% { box-shadow: 0 0 0 10px rgba(139,123,255,0); } 100% { box-shadow: 0 0 0 0 rgba(139,123,255,0); } }

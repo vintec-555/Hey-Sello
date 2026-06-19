@@ -3,6 +3,15 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Logo from "@/components/Logo";
+import { useVoice, type VoiceStatus } from "@/lib/useVoice";
+
+const VOICE_LABEL: Record<VoiceStatus, string> = {
+  off: "",
+  wake: "🎙️ Listening for “Hey Sello”…",
+  listening: "🎙️ Listening — what should I do?",
+  thinking: "💭 Working on it…",
+  speaking: "🔊 Speaking…",
+};
 
 type Step =
   | { kind: "status"; text: string }
@@ -39,6 +48,8 @@ export default function AppPage() {
   const [live, setLive] = useState<boolean | null>(null);
   const [conn, setConn] = useState<Connections | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
+  const runRef = useRef<(t: string) => void>(() => {});
+  const voice = useVoice((t) => { setTask(t); runRef.current(t); });
 
   useEffect(() => {
     fetch("/api/connections").then((r) => r.json()).then(setConn).catch(() => {});
@@ -79,7 +90,7 @@ export default function AppPage() {
           else if (ev === "status") push({ kind: "status", text: p.text });
           else if (ev === "tool") push({ kind: "tool", app: p.app, name: p.name, input: p.input });
           else if (ev === "result") push({ kind: "result", text: p.summary, ok: p.ok });
-          else if (ev === "message") push({ kind: "message", text: p.text });
+          else if (ev === "message") { push({ kind: "message", text: p.text }); if (voice.on) voice.speak(p.text); }
           else if (ev === "error") push({ kind: "error", text: p.message });
         }
       }
@@ -87,8 +98,10 @@ export default function AppPage() {
       push({ kind: "error", text: err instanceof Error ? err.message : "Run failed." });
     } finally {
       setRunning(false);
+      voice.resume();
     }
   }
+  runRef.current = run;
 
   return (
     <div className="app-wrap">
@@ -96,12 +109,30 @@ export default function AppPage() {
         <Link href="/" className="app-head__title" style={{ textDecoration: "none", color: "inherit" }}>
           <Logo />
         </Link>
-        {live !== null && (
-          <span className={`app-badge ${live ? "app-badge--live" : "app-badge--demo"}`}>
-            {live ? "Live · real actions" : "Simulated"}
-          </span>
-        )}
+        <div className="app-head__right">
+          {voice.supported && (
+            <button
+              className={`voice-btn${voice.on ? " voice-btn--on" : ""}`}
+              onClick={() => (voice.on ? voice.disable() : voice.enable())}
+              title={voice.on ? "Turn voice off" : "Talk to Sello — say “Hey Sello”"}
+            >
+              🎙️ {voice.on ? "Voice on" : "Voice"}
+            </button>
+          )}
+          {live !== null && (
+            <span className={`app-badge ${live ? "app-badge--live" : "app-badge--demo"}`}>
+              {live ? "Live · real actions" : "Simulated"}
+            </span>
+          )}
+        </div>
       </header>
+
+      {voice.on && voice.status !== "off" && (
+        <div className="voice-status">
+          <span className="voice-pulse" />
+          {VOICE_LABEL[voice.status]}
+        </div>
+      )}
 
       {conn && (
         <div className="conn-bar">
