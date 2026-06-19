@@ -43,7 +43,7 @@ export function authUrl(redirectUri: string): string {
   return `https://accounts.google.com/o/oauth2/v2/auth?${p}`;
 }
 
-export async function exchangeCode(code: string, redirectUri: string): Promise<void> {
+export async function exchangeCode(code: string, redirectUri: string): Promise<string> {
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -62,6 +62,7 @@ export async function exchangeCode(code: string, redirectUri: string): Promise<v
     access_token: data.access_token,
     expiry: Date.now() + (data.expires_in ?? 3600) * 1000,
   });
+  return data.refresh_token as string;
 }
 
 async function accessToken(): Promise<string> {
