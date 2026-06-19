@@ -14,3 +14,8 @@ next-env.d.ts
 preview-*.png
 *.log
 .DS_Store
+
+# demo artifacts
+shot-*.png
+*.webm
+/vid/
