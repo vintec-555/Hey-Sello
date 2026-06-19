@@ -37,7 +37,7 @@ export const tools: SelloTool[] = [
     run: async ({ query }) => {
       if (!(await gmailConnected())) return notConnected("Gmail");
       const msgs = await gmailSearch(String(query ?? ""));
-      return { ok: true, summary: `Found ${msgs.length} message(s).`, data: msgs };
+      return { ok: true, summary: `Found ${msgs.length} ${msgs.length === 1 ? "email" : "emails"} in your inbox.`, data: msgs };
     },
   },
   {
@@ -56,7 +56,7 @@ export const tools: SelloTool[] = [
     run: async ({ to, subject, body }) => {
       if (!(await gmailConnected())) return notConnected("Gmail");
       await gmailSend(String(to), String(subject), String(body));
-      return { ok: true, summary: `Sent an email to ${to} — “${subject}”.` };
+      return { ok: true, summary: `Email sent to ${to}.` };
     },
   },
   {
@@ -109,7 +109,7 @@ export const tools: SelloTool[] = [
       const list = (await getStored<unknown[]>("crm")) ?? [];
       list.push({ name: name ?? email, email, stage, note: note ?? "", at: new Date().toISOString() });
       await setStored("crm", list);
-      return { ok: true, summary: `Saved ${email} in the CRM as “${stage}”.` };
+      return { ok: true, summary: `Saved ${email} to your CRM (${stage}).` };
     },
   },
 ];

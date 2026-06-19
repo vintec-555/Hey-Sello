@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Logo from "@/components/Logo";
 import VoicePicker, { DEFAULT_VOICE_ID } from "@/components/VoicePicker";
+import RichText from "@/components/RichText";
 import { useVoice, type VoiceStatus } from "@/lib/useVoice";
 
 const VOICE_LABEL: Record<VoiceStatus, string> = {
@@ -30,11 +31,11 @@ type Connections = {
 
 const APP_ICON: Record<string, string> = { gmail: "📧", whatsapp: "💬", crm: "📇", app: "⟳" };
 const PRETTY: Record<string, string> = {
-  gmail_search: "Searched Gmail",
-  gmail_send_reply: "Sent an email",
-  whatsapp_recent: "Read WhatsApp",
-  whatsapp_send: "Sent a WhatsApp message",
-  crm_upsert_contact: "Updated the CRM",
+  gmail_search: "Reading your inbox",
+  gmail_send_reply: "Sending an email",
+  whatsapp_recent: "Reading WhatsApp",
+  whatsapp_send: "Sending a WhatsApp message",
+  crm_upsert_contact: "Saving to your CRM",
 };
 
 const SUGGESTIONS = [
@@ -224,8 +225,8 @@ export default function AppPage() {
           if (s.kind === "message")
             return (
               <div className="step-row step-row--msg" key={i}>
-                <span className="step-ico">⟳</span>
-                <div className="step-body">{s.text}</div>
+                <span className="step-ico">✦</span>
+                <div className="step-body"><RichText text={s.text} /></div>
               </div>
             );
           if (s.kind === "error")
@@ -303,7 +304,10 @@ function ConnChip({
 function summarizeInput(input: Record<string, unknown>): string {
   if (!input) return "";
   if (input.to) return `to ${input.to}`;
-  if (input.query) return `“${input.query}”`;
+  if (input.query) {
+    const q = String(input.query);
+    return /[a-z_]+:/i.test(q) ? "looking through recent messages" : `for “${q}”`;
+  }
   if (input.email) return `${input.email}${input.stage ? ` → ${input.stage}` : ""}`;
   if (input.text) return truncate(String(input.text));
   return truncate(JSON.stringify(input));
