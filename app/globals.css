@@ -246,8 +246,16 @@ h1 { font-size: clamp(2.7rem, 7vw, 4.7rem); line-height: 1.03; letter-spacing: -
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; transition: none !important; animation: none !important; } }
 
+/* ---------- App header nav ---------- */
+.app-head__left { display: flex; align-items: center; gap: 12px; }
+.app-nav { display: flex; align-items: center; gap: 18px; }
+.app-nav__link { text-decoration: none; color: var(--text-soft); font-weight: 600; font-size: 0.9rem; transition: color 0.15s; }
+.app-nav__link:hover { color: var(--text); }
+.app-nav__sep { width: 1px; height: 20px; background: var(--line-2); }
+.app-nav__logout { font: inherit; font-size: 0.9rem; font-weight: 600; color: var(--text-dim); background: none; border: none; cursor: pointer; padding: 0; transition: color 0.15s; }
+.app-nav__logout:hover { color: var(--pink); }
+
 /* ---------- Voice ---------- */
-.app-head__right { display: flex; align-items: center; gap: 10px; }
 .voice-btn {
   display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 0.82rem; font-weight: 700;
   cursor: pointer; color: var(--text-soft); background: var(--surface); border: 1px solid var(--line-2);

@@ -186,19 +186,19 @@ export default function AppPage() {
   return (
     <div className="app-wrap">
       <header className="app-head">
-        <Link href="/" className="app-head__title" style={{ textDecoration: "none", color: "inherit" }}>
-          <Logo />
-        </Link>
-        <div className="app-head__right">
-          <Link href="/app/business" className="nav__link" style={{ fontSize: "0.85rem" }}>🧠 Business Brain</Link>
-          <Link href="/app/billing" className="nav__link" style={{ fontSize: "0.85rem" }}>Plans</Link>
-          <button
-            className="nav__link"
-            style={{ fontSize: "0.85rem", background: "none", border: "none", cursor: "pointer" }}
-            onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/login"; }}
-          >
-            Log out
-          </button>
+        <div className="app-head__left">
+          <Link href="/" className="app-head__title" style={{ textDecoration: "none", color: "inherit" }}>
+            <Logo />
+          </Link>
+          {live !== null && (
+            <span className={`app-badge ${live ? "app-badge--live" : "app-badge--demo"}`} title={live ? "Sello can take real actions" : "Actions are simulated"}>
+              {live ? "Live" : "Demo"}
+            </span>
+          )}
+        </div>
+        <nav className="app-nav">
+          <Link href="/app/business" className="app-nav__link">Business Brain</Link>
+          <Link href="/app/billing" className="app-nav__link">Plans</Link>
           {voice.supported && (
             <button
               className={`voice-btn${voice.on ? " voice-btn--on" : ""}`}
@@ -208,12 +208,14 @@ export default function AppPage() {
               🎙️ {voice.on ? "Voice on" : "Voice"}
             </button>
           )}
-          {live !== null && (
-            <span className={`app-badge ${live ? "app-badge--live" : "app-badge--demo"}`}>
-              {live ? "Live · real actions" : "Simulated"}
-            </span>
-          )}
-        </div>
+          <span className="app-nav__sep" aria-hidden="true" />
+          <button
+            className="app-nav__logout"
+            onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/login"; }}
+          >
+            Log out
+          </button>
+        </nav>
       </header>
 
       {voice.on && voice.status !== "off" && (
