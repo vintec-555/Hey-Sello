@@ -9,10 +9,12 @@ export async function POST(req: Request) {
   const key = process.env.ELEVENLABS_API_KEY;
   if (!key) return new Response("ElevenLabs not configured", { status: 503 });
 
-  const { text } = (await req.json().catch(() => ({}))) as { text?: string };
+  const { text, voiceId } = (await req.json().catch(() => ({}))) as { text?: string; voiceId?: string };
   if (!text || !text.trim()) return new Response("No text", { status: 400 });
 
-  const voice = process.env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE;
+  // Prefer the voice chosen in the UI; fall back to env, then the default.
+  const picked = typeof voiceId === "string" && /^[A-Za-z0-9]{8,40}$/.test(voiceId) ? voiceId : "";
+  const voice = picked || process.env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE;
   const model = process.env.ELEVENLABS_MODEL || DEFAULT_MODEL;
 
   const res = await fetch(

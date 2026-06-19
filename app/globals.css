@@ -262,3 +262,20 @@ h1 { font-size: clamp(2.7rem, 7vw, 4.7rem); line-height: 1.03; letter-spacing: -
 }
 .voice-pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 0 0 rgba(139,123,255,0.6); animation: pulse 1.5s infinite; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(139,123,255,0.55); } 70% { box-shadow: 0 0 0 10px rgba(139,123,255,0); } 100% { box-shadow: 0 0 0 0 rgba(139,123,255,0); } }
+
+/* ---------- Voice picker ---------- */
+.voice-settings { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 14px 0 0; font-size: 0.86rem; }
+.voice-settings__label { color: var(--text-soft); font-weight: 600; }
+.voice-select {
+  font: inherit; font-size: 0.86rem; color: var(--text); background: var(--surface);
+  border: 1px solid var(--line-2); border-radius: 10px; padding: 7px 12px; cursor: pointer;
+}
+.voice-select:focus { outline: none; border-color: var(--violet); }
+.voice-select option { background: var(--surface); color: var(--text); }
+.voice-preview {
+  font: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer; color: var(--violet);
+  background: rgba(139,123,255,0.1); border: 1px solid var(--line-2); border-radius: 999px; padding: 7px 14px; transition: all .15s;
+}
+.voice-preview:hover { background: rgba(139,123,255,0.18); border-color: var(--violet); }
+.voice-settings__hint { color: var(--text-dim); font-size: 0.78rem; }
+.voice-settings__hint code { font-family: ui-monospace, monospace; color: var(--text-soft); }

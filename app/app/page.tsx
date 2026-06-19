@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Logo from "@/components/Logo";
+import VoicePicker, { DEFAULT_VOICE_ID } from "@/components/VoicePicker";
 import { useVoice, type VoiceStatus } from "@/lib/useVoice";
 
 const VOICE_LABEL: Record<VoiceStatus, string> = {
@@ -51,6 +52,21 @@ export default function AppPage() {
   const feedRef = useRef<HTMLDivElement>(null);
   const runRef = useRef<(t: string) => void>(() => {});
   const voice = useVoice((t) => { setTask(t); runRef.current(t); });
+  const [voiceId, setVoiceId] = useState(DEFAULT_VOICE_ID);
+
+  useEffect(() => {
+    const saved = typeof window !== "undefined" && localStorage.getItem("sello.voice");
+    const id = saved || DEFAULT_VOICE_ID;
+    setVoiceId(id);
+    voice.setVoiceId(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function chooseVoice(id: string) {
+    setVoiceId(id);
+    voice.setVoiceId(id);
+    try { localStorage.setItem("sello.voice", id); } catch {}
+  }
 
   useEffect(() => {
     fetch("/api/connections")
@@ -161,6 +177,15 @@ export default function AppPage() {
           />
           <ConnChip label="Agent" icon="🧠" ok={conn.agent} action={conn.agent ? undefined : { hint: "Set ANTHROPIC_API_KEY" }} />
         </div>
+      )}
+
+      {voice.supported && (
+        <VoicePicker
+          value={voiceId}
+          premium={Boolean(conn?.voice?.premium)}
+          onChange={chooseVoice}
+          onPreview={() => voice.preview()}
+        />
       )}
 
       <p className="app-hint">

@@ -22,6 +22,7 @@ export function useVoice(onCommand: (text: string) => void) {
   const queueRef = useRef<string[]>([]);
   const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
   const premiumRef = useRef(false);
+  const voiceIdRef = useRef<string>("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cmdRef = useRef(onCommand);
   cmdRef.current = onCommand;
@@ -74,7 +75,7 @@ export function useVoice(onCommand: (text: string) => void) {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, voiceId: voiceIdRef.current || undefined }),
       });
       if (!res.ok) throw new Error("tts");
       const url = URL.createObjectURL(await res.blob());
@@ -181,6 +182,34 @@ export function useVoice(onCommand: (text: string) => void) {
   }, []);
 
   const setPremium = useCallback((v: boolean) => { premiumRef.current = v; }, []);
+  const setVoiceId = useCallback((id: string) => { voiceIdRef.current = id || ""; }, []);
 
-  return { on, status, supported, enable, disable, speak, resume, setPremium };
+  // Play a sample in the currently selected voice (independent of the mic loop).
+  const preview = useCallback((sample?: string) => {
+    const text = sample || "Hi, I'm Sello. Say, Hey Sello, then your task, and I'll handle it.";
+    const browserSample = () => {
+      if (typeof window === "undefined" || !window.speechSynthesis) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.03;
+      const v = pickVoice();
+      if (v) u.voice = v;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    };
+    if (premiumRef.current && typeof window !== "undefined") {
+      fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voiceId: voiceIdRef.current || undefined }),
+      })
+        .then((r) => (r.ok ? r.blob() : Promise.reject()))
+        .then((b) => { const a = new Audio(URL.createObjectURL(b)); a.play().catch(() => {}); })
+        .catch(browserSample);
+    } else {
+      browserSample();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return { on, status, supported, enable, disable, speak, resume, setPremium, setVoiceId, preview };
 }
