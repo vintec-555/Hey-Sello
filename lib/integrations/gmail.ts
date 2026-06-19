@@ -1,11 +1,6 @@
-// Real Gmail integration via Google OAuth 2.0 + the Gmail REST API.
-// No SDK dependency — plain fetch, so it deploys anywhere.
-//
-// Setup (see INTEGRATIONS.md): create a Google Cloud OAuth client, set
-// GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET, add the redirect URI, then either
-// run the in-app "Connect Gmail" flow (local) or paste a GOOGLE_REFRESH_TOKEN
-// (production single-account).
-import { getStored, setStored } from "@/lib/store";
+// Per-user Gmail integration via Google OAuth 2.0 + the Gmail REST API.
+// Each signed-in user connects their own Gmail; tokens are stored per user id.
+import { getU, setU } from "@/lib/store";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
@@ -18,20 +13,16 @@ export function googleConfigured(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
 
-async function loadTokens(): Promise<Tokens | null> {
-  if (process.env.GOOGLE_REFRESH_TOKEN) {
-    const stored = await getStored<Tokens>("google");
-    return { refresh_token: process.env.GOOGLE_REFRESH_TOKEN, ...(stored ?? {}) };
-  }
-  return getStored<Tokens>("google");
+async function loadTokens(uid: string): Promise<Tokens | null> {
+  return getU<Tokens>(uid, "google");
 }
 
-export async function gmailConnected(): Promise<boolean> {
+export async function gmailConnected(uid: string): Promise<boolean> {
   if (!googleConfigured()) return false;
-  return Boolean(await loadTokens());
+  return Boolean(await loadTokens(uid));
 }
 
-export function authUrl(redirectUri: string): string {
+export function authUrl(redirectUri: string, state: string): string {
   const p = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
     redirect_uri: redirectUri,
@@ -39,11 +30,12 @@ export function authUrl(redirectUri: string): string {
     access_type: "offline",
     prompt: "consent",
     scope: SCOPES.join(" "),
+    state,
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${p}`;
 }
 
-export async function exchangeCode(code: string, redirectUri: string): Promise<string> {
+export async function exchangeCode(uid: string, code: string, redirectUri: string): Promise<void> {
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -57,16 +49,15 @@ export async function exchangeCode(code: string, redirectUri: string): Promise<s
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error_description || "Token exchange failed");
-  await setStored("google", {
+  await setU(uid, "google", {
     refresh_token: data.refresh_token,
     access_token: data.access_token,
     expiry: Date.now() + (data.expires_in ?? 3600) * 1000,
   });
-  return data.refresh_token as string;
 }
 
-async function accessToken(): Promise<string> {
-  const t = await loadTokens();
+async function accessToken(uid: string): Promise<string> {
+  const t = await loadTokens(uid);
   if (!t) throw new Error("Gmail not connected");
   if (t.access_token && t.expiry && t.expiry > Date.now() + 60_000) return t.access_token;
 
@@ -83,22 +74,22 @@ async function accessToken(): Promise<string> {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error_description || "Token refresh failed");
   const access = data.access_token as string;
-  await setStored("google", { ...t, access_token: access, expiry: Date.now() + (data.expires_in ?? 3600) * 1000 });
+  await setU(uid, "google", { ...t, access_token: access, expiry: Date.now() + (data.expires_in ?? 3600) * 1000 });
   return access;
 }
 
 export async function gmailSearch(
+  uid: string,
   query: string,
   limit = 20,
 ): Promise<{ total: number; messages: { id: string; from: string; subject: string; snippet: string }[] }> {
-  const token = await accessToken();
+  const token = await accessToken(uid);
   const list = await fetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${limit}&q=${encodeURIComponent(query)}`,
     { headers: { Authorization: `Bearer ${token}` } },
   ).then((r) => r.json());
 
   const ids: { id: string }[] = (list.messages ?? []).slice(0, limit);
-  // Gmail's estimate of how many messages match the query in total.
   const total = typeof list.resultSizeEstimate === "number" ? list.resultSizeEstimate : ids.length;
 
   const messages = await Promise.all(
@@ -116,8 +107,8 @@ export async function gmailSearch(
   return { total, messages };
 }
 
-export async function gmailSend(to: string, subject: string, body: string): Promise<void> {
-  const token = await accessToken();
+export async function gmailSend(uid: string, to: string, subject: string, body: string): Promise<void> {
+  const token = await accessToken(uid);
   const mime = [`To: ${to}`, `Subject: ${subject}`, "Content-Type: text/plain; charset=utf-8", "", body].join("\r\n");
   const raw = Buffer.from(mime).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {

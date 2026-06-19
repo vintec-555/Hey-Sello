@@ -341,3 +341,18 @@ h1 { font-size: clamp(2.7rem, 7vw, 4.7rem); line-height: 1.03; letter-spacing: -
 .brain__hint { color: var(--text-dim); font-size: 0.78rem; }
 .brain__actions { display: flex; align-items: center; gap: 14px; margin-top: 8px; position: sticky; bottom: 0; background: linear-gradient(transparent, var(--bg) 30%); padding: 14px 0; }
 .brain__saved { color: var(--green); font-weight: 600; font-size: 0.88rem; }
+
+/* ---------- Auth (login / signup) ---------- */
+.auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.auth-card { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--radius-lg); padding: 32px 28px; box-shadow: var(--shadow); }
+.auth-title { font-size: 1.5rem; text-align: center; letter-spacing: -0.02em; }
+.auth-sub { text-align: center; color: var(--text-soft); margin: 6px 0 22px; font-size: 0.95rem; }
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+.auth-field { display: flex; flex-direction: column; gap: 6px; }
+.auth-field span { font-weight: 600; font-size: 0.86rem; color: var(--text-soft); }
+.auth-field input { font: inherit; font-size: 0.98rem; color: var(--text); background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 12px; padding: 12px 14px; }
+.auth-field input::placeholder { color: var(--text-dim); }
+.auth-field input:focus { outline: none; border-color: var(--violet); }
+.auth-error { color: var(--pink); font-size: 0.88rem; font-weight: 600; margin: -2px 0 0; }
+.auth-switch { text-align: center; color: var(--text-soft); font-size: 0.9rem; margin-top: 18px; }
+.auth-switch a { color: var(--violet); text-decoration: none; font-weight: 700; }

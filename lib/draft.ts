@@ -8,14 +8,17 @@ Write a complete, professional reply in PLAIN TEXT (no markdown, asterisks, or e
 - A polite sign-off like "Best regards," followed by "The team".
 Keep it short and genuinely helpful. Output ONLY the email body.`;
 
-export async function generateReply(email: { from: string; subject: string; snippet: string }): Promise<string | null> {
+export async function generateReply(
+  uid: string,
+  email: { from: string; subject: string; snippet: string },
+): Promise<string | null> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return null;
   const client = new Anthropic({ apiKey: key });
   const res = await client.messages.create({
     model: "claude-opus-4-8",
     max_tokens: 600,
-    system: DRAFT_SYSTEM + businessContext(await getBusinessProfile()),
+    system: DRAFT_SYSTEM + businessContext(await getBusinessProfile(uid)),
     messages: [
       {
         role: "user",

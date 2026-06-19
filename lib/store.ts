@@ -50,3 +50,11 @@ export async function setStored(key: string, value: unknown): Promise<void> {
   all[key] = value;
   await fs.writeFile(FILE, JSON.stringify(all, null, 2));
 }
+
+// Per-user namespaced helpers (multi-tenant).
+export async function getU<T>(uid: string, key: string): Promise<T | null> {
+  return getStored<T>(`u:${uid}:${key}`);
+}
+export async function setU(uid: string, key: string, value: unknown): Promise<void> {
+  return setStored(`u:${uid}:${key}`, value);
+}

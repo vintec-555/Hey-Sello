@@ -1,4 +1,4 @@
-import { getStored, setStored } from "@/lib/store";
+import { getU, setU } from "@/lib/store";
 
 // The owner's "Business Brain" — context Sello uses to make every reply
 // accurate and on-brand instead of generic.
@@ -18,17 +18,17 @@ const FIELDS: (keyof BusinessProfile)[] = [
   "name", "about", "services", "hours", "location", "bookingLink", "tone", "faqs", "notes",
 ];
 
-export async function getBusinessProfile(): Promise<BusinessProfile | null> {
-  return getStored<BusinessProfile>("business_profile");
+export async function getBusinessProfile(uid: string): Promise<BusinessProfile | null> {
+  return getU<BusinessProfile>(uid, "business_profile");
 }
 
-export async function saveBusinessProfile(input: Record<string, unknown>): Promise<BusinessProfile> {
+export async function saveBusinessProfile(uid: string, input: Record<string, unknown>): Promise<BusinessProfile> {
   const clean: BusinessProfile = {};
   for (const f of FIELDS) {
     const v = input[f];
     if (typeof v === "string" && v.trim()) clean[f] = v.trim().slice(0, 4000);
   }
-  await setStored("business_profile", clean);
+  await setU(uid, "business_profile", clean);
   return clean;
 }
 

@@ -17,8 +17,8 @@ export default function Home() {
           <Logo />
         </Link>
         <nav className="nav__links">
-          <Link className="nav__link" href="/app">Try the demo</Link>
-          <a className="nav__cta" href="#waitlist">Join the waitlist</a>
+          <Link className="nav__link" href="/login">Log in</Link>
+          <Link className="nav__cta" href="/signup">Get started</Link>
         </nav>
       </header>
 

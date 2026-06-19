@@ -6,7 +6,7 @@
 // explicit opt-in, so a real run can never be mistaken for a fake one.)
 import { gmailConnected, gmailSearch, gmailSend } from "@/lib/integrations/gmail";
 import { whatsappConfigured, whatsappSend, whatsappRecent } from "@/lib/integrations/whatsapp";
-import { getStored, setStored } from "@/lib/store";
+import { getU, setU } from "@/lib/store";
 
 export type ToolResult = { ok: boolean; summary: string; data?: unknown };
 
@@ -15,7 +15,7 @@ export interface SelloTool {
   app: "gmail" | "whatsapp" | "crm";
   description: string;
   input_schema: { type: "object"; properties: Record<string, unknown>; required?: string[] };
-  run: (input: Record<string, unknown>) => Promise<ToolResult>;
+  run: (input: Record<string, unknown>, uid: string) => Promise<ToolResult>;
 }
 
 const notConnected = (what: string): ToolResult => ({
@@ -34,9 +34,9 @@ export const tools: SelloTool[] = [
       properties: { query: { type: "string", description: "Gmail search query." } },
       required: ["query"],
     },
-    run: async ({ query }) => {
-      if (!(await gmailConnected())) return notConnected("Gmail");
-      const { total, messages } = await gmailSearch(String(query ?? ""));
+    run: async ({ query }, uid) => {
+      if (!(await gmailConnected(uid))) return notConnected("Gmail");
+      const { total, messages } = await gmailSearch(uid, String(query ?? ""));
       const more = total > messages.length;
       const summary = more
         ? `You have about ${total.toLocaleString()} matching emails — showing the ${messages.length} most recent.`
@@ -58,9 +58,9 @@ export const tools: SelloTool[] = [
       },
       required: ["to", "subject", "body"],
     },
-    run: async ({ to, subject, body }) => {
-      if (!(await gmailConnected())) return notConnected("Gmail");
-      await gmailSend(String(to), String(subject), String(body));
+    run: async ({ to, subject, body }, uid) => {
+      if (!(await gmailConnected(uid))) return notConnected("Gmail");
+      await gmailSend(uid, String(to), String(subject), String(body));
       return { ok: true, summary: `Email sent to ${to}.` };
     },
   },
@@ -110,10 +110,10 @@ export const tools: SelloTool[] = [
       },
       required: ["email", "stage"],
     },
-    run: async ({ name, email, stage, note }) => {
-      const list = (await getStored<unknown[]>("crm")) ?? [];
+    run: async ({ name, email, stage, note }, uid) => {
+      const list = (await getU<unknown[]>(uid, "crm")) ?? [];
       list.push({ name: name ?? email, email, stage, note: note ?? "", at: new Date().toISOString() });
-      await setStored("crm", list);
+      await setU(uid, "crm", list);
       return { ok: true, summary: `Saved ${email} to your CRM (${stage}).` };
     },
   },

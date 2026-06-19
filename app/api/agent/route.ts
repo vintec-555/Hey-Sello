@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { tools, toolByName, demoLeads, type ToolResult } from "@/lib/tools";
 import { getBusinessProfile, businessContext } from "@/lib/business";
+import { currentUserId } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -101,6 +102,9 @@ export async function POST(req: Request) {
     });
   }
 
+  const uid = await currentUserId();
+  if (!uid) return Response.json({ error: "Please sign in." }, { status: 401 });
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return sseStream(async (send) => {
@@ -122,7 +126,7 @@ export async function POST(req: Request) {
 
   return sseStream(async (send) => {
     send("mode", { live: true });
-    const system = SYSTEM + businessContext(await getBusinessProfile());
+    const system = SYSTEM + businessContext(await getBusinessProfile(uid));
     const messages: Anthropic.MessageParam[] = [{ role: "user", content: task }];
 
     for (let turn = 0; turn < 12; turn++) {
@@ -174,7 +178,7 @@ export async function POST(req: Request) {
         let result: ToolResult;
         try {
           result = tool
-            ? await tool.run(block.input as Record<string, unknown>)
+            ? await tool.run(block.input as Record<string, unknown>, uid)
             : { ok: false, summary: `Unknown tool: ${block.name}` };
         } catch (e) {
           result = { ok: false, summary: e instanceof Error ? e.message : "Tool failed." };

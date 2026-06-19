@@ -1,11 +1,15 @@
 import { gmailConnected, gmailSend } from "@/lib/integrations/gmail";
 import { whatsappConfigured, whatsappSend } from "@/lib/integrations/whatsapp";
+import { currentUserId } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 // Performs the actual send — only called when the user clicks "Approve" on a
-// reviewed draft. Keeps real sends behind an explicit human action.
+// reviewed draft, and only for the signed-in user's connected account.
 export async function POST(req: Request) {
+  const uid = await currentUserId();
+  if (!uid) return Response.json({ error: "Not signed in" }, { status: 401 });
+
   const { app, to, subject, body } = (await req.json().catch(() => ({}))) as {
     app?: string;
     to?: string;
@@ -16,8 +20,8 @@ export async function POST(req: Request) {
 
   try {
     if (app === "gmail") {
-      if (!(await gmailConnected())) return Response.json({ error: "Gmail isn't connected." }, { status: 400 });
-      await gmailSend(to, subject || "(no subject)", body);
+      if (!(await gmailConnected(uid))) return Response.json({ error: "Gmail isn't connected." }, { status: 400 });
+      await gmailSend(uid, to, subject || "(no subject)", body);
     } else if (app === "whatsapp") {
       if (!whatsappConfigured()) return Response.json({ error: "WhatsApp isn't connected." }, { status: 400 });
       await whatsappSend(to, body);

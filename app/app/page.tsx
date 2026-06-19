@@ -191,6 +191,13 @@ export default function AppPage() {
         </Link>
         <div className="app-head__right">
           <Link href="/app/business" className="nav__link" style={{ fontSize: "0.85rem" }}>🧠 Business Brain</Link>
+          <button
+            className="nav__link"
+            style={{ fontSize: "0.85rem", background: "none", border: "none", cursor: "pointer" }}
+            onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/login"; }}
+          >
+            Log out
+          </button>
           {voice.supported && (
             <button
               className={`voice-btn${voice.on ? " voice-btn--on" : ""}`}
