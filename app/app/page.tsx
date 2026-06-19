@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import Logo from "@/components/Logo";
 
 type Step =
   | { kind: "status"; text: string }
@@ -93,7 +94,7 @@ export default function AppPage() {
     <div className="app-wrap">
       <header className="app-head">
         <Link href="/" className="app-head__title" style={{ textDecoration: "none", color: "inherit" }}>
-          <span className="brand__mark">⟳</span> Hey Sello
+          <Logo />
         </Link>
         {live !== null && (
           <span className={`app-badge ${live ? "app-badge--live" : "app-badge--demo"}`}>

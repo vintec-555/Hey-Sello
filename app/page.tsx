@@ -1,5 +1,6 @@
 import Link from "next/link";
 import WaitlistForm from "@/components/WaitlistForm";
+import Logo from "@/components/Logo";
 
 export default function Home() {
   const year = new Date().getFullYear();
@@ -13,8 +14,7 @@ export default function Home() {
 
       <header className="nav">
         <Link className="brand" href="/">
-          <span className="brand__mark">⟳</span>
-          <span className="brand__name">Hey Sello</span>
+          <Logo />
         </Link>
         <nav className="nav__links">
           <Link className="nav__link" href="/app">Try the demo</Link>
@@ -141,10 +141,7 @@ export default function Home() {
       </main>
 
       <footer className="footer">
-        <span className="brand brand--sm">
-          <span className="brand__mark">⟳</span>
-          <span className="brand__name">Hey Sello</span>
-        </span>
+        <Logo size={20} />
         <span className="footer__copy">
           © {year} Hey Sello. Built for people with better things to do.
           <br className="footer__br" />
