@@ -87,25 +87,33 @@ async function accessToken(): Promise<string> {
   return access;
 }
 
-export async function gmailSearch(query: string): Promise<{ id: string; from: string; subject: string; snippet: string }[]> {
+export async function gmailSearch(
+  query: string,
+  limit = 20,
+): Promise<{ total: number; messages: { id: string; from: string; subject: string; snippet: string }[] }> {
   const token = await accessToken();
   const list = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=10&q=${encodeURIComponent(query)}`,
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${limit}&q=${encodeURIComponent(query)}`,
     { headers: { Authorization: `Bearer ${token}` } },
   ).then((r) => r.json());
 
-  const ids: { id: string }[] = list.messages ?? [];
-  const out = [];
-  for (const { id } of ids.slice(0, 10)) {
-    const msg = await fetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    ).then((r) => r.json());
-    const headers: { name: string; value: string }[] = msg.payload?.headers ?? [];
-    const h = (n: string) => headers.find((x) => x.name.toLowerCase() === n)?.value ?? "";
-    out.push({ id, from: h("from"), subject: h("subject"), snippet: msg.snippet ?? "" });
-  }
-  return out;
+  const ids: { id: string }[] = (list.messages ?? []).slice(0, limit);
+  // Gmail's estimate of how many messages match the query in total.
+  const total = typeof list.resultSizeEstimate === "number" ? list.resultSizeEstimate : ids.length;
+
+  const messages = await Promise.all(
+    ids.map(async ({ id }) => {
+      const msg = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      ).then((r) => r.json());
+      const hdrs: { name: string; value: string }[] = msg.payload?.headers ?? [];
+      const h = (n: string) => hdrs.find((x) => x.name.toLowerCase() === n)?.value ?? "";
+      return { id, from: h("from"), subject: h("subject"), snippet: msg.snippet ?? "" };
+    }),
+  );
+
+  return { total, messages };
 }
 
 export async function gmailSend(to: string, subject: string, body: string): Promise<void> {

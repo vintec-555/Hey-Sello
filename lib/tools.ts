@@ -28,7 +28,7 @@ export const tools: SelloTool[] = [
     name: "gmail_search",
     app: "gmail",
     description:
-      "Search the connected Gmail inbox with a Gmail query (e.g. 'is:unread', 'newer_than:2d demo', a sender or subject). Returns real messages.",
+      "Search the connected Gmail inbox with a Gmail query (e.g. 'is:unread', 'newer_than:2d', a sender or subject). Returns 'total' (how many emails match in total) and 'messages' (the most recent ~20, as a sample). When total is larger than the sample, tell the user the real total and that you're summarizing the most recent.",
     input_schema: {
       type: "object",
       properties: { query: { type: "string", description: "Gmail search query." } },
@@ -36,14 +36,19 @@ export const tools: SelloTool[] = [
     },
     run: async ({ query }) => {
       if (!(await gmailConnected())) return notConnected("Gmail");
-      const msgs = await gmailSearch(String(query ?? ""));
-      return { ok: true, summary: `Found ${msgs.length} ${msgs.length === 1 ? "email" : "emails"} in your inbox.`, data: msgs };
+      const { total, messages } = await gmailSearch(String(query ?? ""));
+      const more = total > messages.length;
+      const summary = more
+        ? `You have about ${total.toLocaleString()} matching emails — showing the ${messages.length} most recent.`
+        : `Found ${messages.length} ${messages.length === 1 ? "email" : "emails"}.`;
+      return { ok: true, summary, data: { total, showing: messages.length, messages } };
     },
   },
   {
     name: "gmail_send_reply",
     app: "gmail",
-    description: "Send a real email from the connected Gmail account.",
+    description:
+      "Send a real, professionally written email from the connected Gmail account. The body must read like a polished human email: a greeting, a clear concise body, and a polite sign-off. Plain text only — no markdown or asterisks.",
     input_schema: {
       type: "object",
       properties: {
