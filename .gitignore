@@ -19,3 +19,6 @@ preview-*.png
 shot-*.png
 *.webm
 /vid/
+
+# TS build info
+tsconfig.tsbuildinfo

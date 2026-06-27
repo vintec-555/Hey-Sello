@@ -190,6 +190,7 @@ export default function AppPage() {
           <Logo />
         </Link>
         <div className="app-head__right">
+          <Link href="/app/verticals" className="nav__link" style={{ fontSize: "0.85rem" }}>📊 Verticals</Link>
           <Link href="/app/business" className="nav__link" style={{ fontSize: "0.85rem" }}>🧠 Business Brain</Link>
           <Link href="/app/billing" className="nav__link" style={{ fontSize: "0.85rem" }}>Plans</Link>
           <button
