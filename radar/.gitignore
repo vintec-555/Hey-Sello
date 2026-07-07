@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Model weights (downloaded on demand)
+*.pt
+*.onnx
+*.weights
+
+# Generated demo / run artifacts
+sample.mp4
+*.annotated.mp4
+violations/

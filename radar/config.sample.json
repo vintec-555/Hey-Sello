@@ -1,0 +1,23 @@
+{
+  "source": "sample.mp4",
+  "output": "sample.annotated.mp4",
+  "violations_dir": "violations",
+  "detector": "auto",
+  "anpr": "auto",
+  "conf_threshold": 0.35,
+  "min_hits_before_speed": 3,
+  "speed_smoothing": 0.5,
+  "speed_tolerance_kmh": 5.0,
+  "speed_limits_kmh": {
+    "car": 60,
+    "bike": 50,
+    "auto": 40,
+    "bus": 50,
+    "truck": 50,
+    "unknown": 45
+  },
+  "calibration": {
+    "image_points": [[200, 120], [440, 120], [560, 470], [80, 470]],
+    "world_points": [[0.0, 40.0], [10.0, 40.0], [10.0, 0.0], [0.0, 0.0]]
+  }
+}
