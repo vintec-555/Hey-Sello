@@ -1,0 +1,18 @@
+# Core (required) — the pipeline runs with just these.
+numpy>=1.24
+opencv-python-headless>=4.8   # use opencv-python if you want GUI windows
+
+# Optional — vehicle detection (recommended for real accuracy).
+# Without this, the pipeline falls back to a motion/background-subtraction detector.
+# ultralytics>=8.1
+
+# Optional — Automatic Number Plate Recognition (ANPR/OCR).
+# Without one of these, plates are located but not read (text = None).
+# easyocr>=1.7            # pure-python, downloads its own weights on first run
+# pytesseract>=0.3.10     # requires the `tesseract-ocr` system binary
+
+# Optional — YAML configs (JSON works without it).
+# pyyaml>=6.0
+
+# Dev
+# pytest>=7.4
